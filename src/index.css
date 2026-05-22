@@ -482,6 +482,16 @@ h1, h2, h3, h4 {
   box-shadow: 0 4px 12px rgba(245,30,101,0.35);
 }
 
+/* ─── Animations de Tracé ──────────────────────────────────────────── */
+.draw-path {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: drawLine 2.8s ease-in-out forwards;
+}
+@keyframes drawLine {
+  to { stroke-dashoffset: 0; }
+}
+
 /* ─── Graphiques SVG ───────────────────────────────────────────────── */
 .graph-wrap {
   background: #f8fafc;
@@ -604,6 +614,7 @@ h1, h2, h3, h4 {
 .rec-step {
   border-right: 1px solid #e2e8f0;
   padding: 0.7rem 0.8rem;
+  min-width: 0;
 }
 .rec-step:last-child { border-right: none; }
 .rec-step-badge {
@@ -619,7 +630,7 @@ h1, h2, h3, h4 {
 .rec-hyp  .rec-step-badge { color: #d97706; }
 .rec-demo { background: #f0fdf4; }
 .rec-demo .rec-step-badge { color: #16803c; }
-.rec-step-body { line-height: 1.6; }
+.rec-step-body { line-height: 1.6; overflow-x: auto; padding-bottom: 0.5rem; }
 
 /* ─── Raisonnement par récurrence ──────────────────────────────────────── */
 .rec-box {
@@ -654,6 +665,7 @@ h1, h2, h3, h4 {
 .rec-step {
   border-right: 1px solid #e2e8f0;
   padding: 0.7rem 0.8rem;
+  min-width: 0;
 }
 .rec-step:last-child { border-right: none; }
 .rec-step-badge {
@@ -669,7 +681,7 @@ h1, h2, h3, h4 {
 .rec-hyp  .rec-step-badge { color: #d97706; }
 .rec-demo { background: #f0fdf4; }
 .rec-demo .rec-step-badge { color: #16803c; }
-.rec-step-body { line-height: 1.6; }
+.rec-step-body { line-height: 1.6; overflow-x: auto; padding-bottom: 0.5rem; }
 .tkztab-wrap { margin: 1rem 0; overflow-x: auto; }
 /* ─── Styles d'impression ──────────────────────────────────────────────── */
 @media print {

@@ -58,7 +58,7 @@ export function ScatterPlot({ points, xLabel, yLabel, lines = [], xmin, xmax, ym
 }
 
 // ─── Courbe de fonction ───────────────────────────────────────────────────────
-export function FunctionCurve({ fn, xmin, xmax, ymin, ymax, xticks, yticks, xLabel, yLabel, title, extra = [], samples = 400 }) {
+export function FunctionCurve({ fn, xmin, xmax, ymin, ymax, xticks, yticks, xLabel, yLabel, title, extra = [], samples = 400, animated = false }) {
   const xs = Array.from({ length: samples }, (_, i) => xmin + (i / (samples - 1)) * (xmax - xmin))
   const allPts = xs.map(x => ({ x, y: fn(x) })).filter(p => isFinite(p.y))
 
@@ -93,7 +93,7 @@ export function FunctionCurve({ fn, xmin, xmax, ymin, ymax, xticks, yticks, xLab
           if (e.type === 'point') return <circle key={i} cx={sx(e.x, xmin, xmax)} cy={sy(e.y, ymin, ymax)} r={4} fill={e.color || '#ea7c1e'} />
           return null
         })}
-        {segments.map((seg, i) => <path key={i} d={toPath(seg)} fill="none" stroke="#1d3a6e" strokeWidth={2.5} />)}
+        {segments.map((seg, i) => <path key={i} d={toPath(seg)} fill="none" stroke="#1d3a6e" strokeWidth={2.5} className={animated ? "draw-path" : ""} pathLength={animated ? "100" : undefined} />)}
         <text x={PAD.left + PW / 2} y={H - 4} textAnchor="middle" fontSize="12" fill="#475569" fontWeight="600">{xLabel || 'x'}</text>
         <text x={12} y={PAD.top + PH / 2} textAnchor="middle" fontSize="12" fill="#475569" fontWeight="600" transform={`rotate(-90, 12, ${PAD.top + PH / 2})`}>{yLabel || 'y'}</text>
       </svg>

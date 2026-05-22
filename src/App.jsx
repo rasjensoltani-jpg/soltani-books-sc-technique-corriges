@@ -9,6 +9,241 @@ const tex = (s, d = false) => ({ __html: katex.renderToString(s, { throwOnError:
 const IM = ({ t }) => <span dangerouslySetInnerHTML={tex(t)} />
 const BM = ({ t }) => <div className="block-math" dangerouslySetInnerHTML={tex(t, true)} />
 
+
+function ComplexAnimation() {
+  const [step, setStep] = useState(-1);
+  const [playing, setPlaying] = useState(false);
+  const sq3 = Math.sqrt(3);
+  const W = 500, SVH = 400;
+  const OX = 180, OY = 210, SCALE = 62;
+  const px = x => OX + x * SCALE;
+  const py = y => OY - y * SCALE;
+
+  const STEPS = [
+    { id:'setup', label:'Plan complexe', color:'#6366f1', title:null, lines:[] },
+    { id:'A1', label:'A: cercle r=2', color:'#e0296e',
+      title:'① Module de z_A', lines:['|z_A| = √(3+1) = 2','→ A ∈ C(O, 2)'] },
+    { id:'A2', label:'A: droite y=1', color:'#e0296e',
+      title:'② Partie entière de Im(z_A)', lines:['Im(z_A) = 1 ∈ ℤ','→ A sur la droite y = 1','(2 intersections possibles)'] },
+    { id:'A3', label:'A placé ✓', color:'#e0296e',
+      title:'③ Signe de Re(z_A)', lines:["Re(z_A) = √3 > 0","→ A est à droite de Im","→ A = (√3, 1)  ✓"] },
+    { id:'B1', label:'B: cercle r=2', color:'#f59e0b',
+      title:'① Module de z_B', lines:['|z_B| = √(1+3) = 2','→ B ∈ C(O, 2)'] },
+    { id:'B2', label:'B: droite x=−1', color:'#f59e0b',
+      title:'② Partie entière de Re(z_B)', lines:['Re(z_B) = −1 ∈ ℤ','→ B sur la droite x = −1','(2 intersections possibles)'] },
+    { id:'B3', label:'B placé ✓', color:'#f59e0b',
+      title:'③ Signe de Im(z_B)', lines:['Im(z_B) = √3 > 0','→ B est au-dessus de Re','→ B = (−1, √3)  ✓'] },
+    { id:'C1', label:'C placé ✓', color:'#3b82f6',
+      title:'z_C = 2 ∈ ℤ', lines:['z_C = 2 (entier)','Re et Im sont entiers','→ C = (2, 0) directement  ✓'] },
+    { id:'H1', label:'H: ⊥(BC) par A', color:'#f97316',
+      title:'① Perpendiculaire à (BC) par A', lines:['(AH) ⊥ (BC)','Droite passant par A','de direction ⊥ à (BC)'] },
+    { id:'H2', label:'H: droite arg=π/4', color:'#8b5cf6',
+      title:'② Droite angle π/4 par O', lines:['arg(z_H) = π/4','→ la droite y = x (depuis O)','z_H = (√3+1)(1+i)'] },
+    { id:'H3', label:'H = intersection ✓', color:'#10b981',
+      title:'H = intersection des 2 droites', lines:['H = (√3+1, √3+1)','|z_H| = (√3+1)√2','arg(z_H) = π/4  ✓'] },
+  ];
+
+  const restart = () => { setStep(-1); setPlaying(false); };
+  const start   = () => { setStep(0); setPlaying(true); };
+
+  useEffect(() => {
+    if (!playing || step >= STEPS.length - 1) return;
+    const t = setTimeout(() => setStep(s => s + 1), 2200);
+    return () => clearTimeout(t);
+  }, [playing, step]);
+
+  const fi = { opacity:0, animation:'fadeIn 0.7s ease-out forwards' };
+  const ticks = [-2, -1, 1, 2, 3];
+  const BCdx = 3, BCdy = -sq3, BClen = Math.sqrt(9+3);
+  const extBC  = t => ({ x:-1+t*BCdx/BClen, y:sq3+t*BCdy/BClen });
+  const perpDx = BCdy, perpDy = -BCdx, perpLen = BClen;
+  const extPerp= t => ({ x:sq3+t*perpDx/perpLen, y:1+t*perpDy/perpLen });
+
+  const s = step;
+  const ids = s >= 0 ? STEPS.slice(0, s+1).map(x=>x.id) : [];
+  const has = id => ids.includes(id);
+
+  const Dot = ({x,y,col,r=5}) => <circle cx={px(x)} cy={py(y)} r={r} fill={col} stroke="white" strokeWidth="1.5"/>;
+  const Lbl = ({x,y,col,name,sub,dx=10,dy=-6}) => (
+    <g>
+      <text x={px(x)+dx} y={py(y)+dy} fontSize="13" fontWeight="800" fill={col}>{name}</text>
+      {sub && <text x={px(x)+dx} y={py(y)+dy+13} fontSize="9" fill={col} fontStyle="italic">{sub}</text>}
+    </g>
+  );
+
+  const info = s >= 0 ? STEPS[s] : null;
+
+  return (
+    <div style={{ background:'linear-gradient(135deg,#0f172a,#1e293b)', borderRadius:'16px', padding:'14px', fontFamily:'Inter,sans-serif' }}>
+      <div style={{ display:'flex', flexWrap:'wrap', gap:'5px', marginBottom:'10px' }}>
+        {STEPS.map((st,i) => (
+          <span key={i} onClick={() => { setPlaying(false); setStep(i); }} style={{
+            padding:'2px 9px', borderRadius:'20px', fontSize:'10px', fontWeight:600, cursor:'pointer',
+            background: s>=i ? st.color : '#334155', color: s>=i ? 'white' : '#64748b',
+            transition:'all 0.3s', outline: s===i ? '2px solid '+st.color : 'none', outlineOffset:'1px'
+          }}>{i+1}. {st.label}</span>
+        ))}
+      </div>
+
+      <div style={{ display:'flex', gap:'10px', alignItems:'flex-start' }}>
+        <div style={{ flex:'1 1 0', background:'#f8fafc', borderRadius:'10px', overflow:'hidden' }}>
+          <svg viewBox={"0 0 "+W+" "+SVH} style={{ width:'100%', display:'block' }}>
+            {ticks.map(t => (
+              <g key={t}>
+                <line x1={px(t)} y1={8} x2={px(t)} y2={SVH-8} stroke="#e2e8f0" strokeWidth="0.8"/>
+                <line x1={8} y1={py(t)} x2={W-8} y2={py(t)} stroke="#e2e8f0" strokeWidth="0.8"/>
+                <text x={px(t)} y={OY+14} textAnchor="middle" fontSize="10" fill="#94a3b8">{t}</text>
+                <text x={OX-8} y={py(t)+4} textAnchor="end" fontSize="10" fill="#94a3b8">{t}</text>
+              </g>
+            ))}
+            <defs>
+              <marker id="cax2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 z" fill="#475569"/>
+              </marker>
+            </defs>
+            <line x1={12} y1={OY} x2={W-8} y2={OY} stroke="#475569" strokeWidth="1.8" markerEnd="url(#cax2)"/>
+            <line x1={OX} y1={SVH-12} x2={OX} y2={8} stroke="#475569" strokeWidth="1.8" markerEnd="url(#cax2)"/>
+            <text x={W-10} y={OY+14} textAnchor="end" fontSize="11" fill="#475569" fontWeight="700">Re</text>
+            <text x={OX+5} y={16} fontSize="11" fill="#475569" fontWeight="700">Im</text>
+            <text x={OX+4} y={OY+14} fontSize="10" fill="#475569">O</text>
+
+            {s>=0 && (
+              <g style={fi}>
+                <circle cx={OX} cy={OY} r={2*SCALE} fill="rgba(99,102,241,0.06)" stroke="#6366f1" strokeWidth="2" strokeDasharray="6 3"/>
+                <text x={OX+2*SCALE+4} y={OY-5} fontSize="11" fill="#6366f1" fontStyle="italic">C(O,2)</text>
+              </g>
+            )}
+
+            {/* ── A ── */}
+            {has('A2') && (
+              <g style={fi}>
+                <line x1={12} y1={py(1)} x2={W-80} y2={py(1)} stroke="#e0296e" strokeWidth="1.8" strokeDasharray="6 3"/>
+                <text x={W-78} y={py(1)+4} fontSize="10" fill="#e0296e" fontWeight="700">y=1</text>
+                <circle cx={px(sq3)}  cy={py(1)} r={7} fill="none" stroke="#e0296e" strokeWidth="2" strokeDasharray="3 2"/>
+                <circle cx={px(-sq3)} cy={py(1)} r={7} fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="3 2"/>
+                <text x={px(-sq3)} y={py(1)-12} textAnchor="middle" fontSize="9" fill="#94a3b8">−√3+i</text>
+              </g>
+            )}
+            {has('A3') && (
+              <g style={fi}>
+                <circle cx={px(-sq3)} cy={py(1)} r={6} fill="#cbd5e1" opacity="0.5"/>
+                <line x1={OX} y1={py(1)} x2={px(sq3)} y2={py(1)} stroke="#e0296e" strokeWidth="1" strokeDasharray="2 2"/>
+                <line x1={px(sq3)} y1={OY} x2={px(sq3)} y2={py(1)} stroke="#e0296e" strokeWidth="1" strokeDasharray="2 2"/>
+                <Dot x={sq3} y={1} col="#e0296e" r={6}/>
+                <Lbl x={sq3} y={1} col="#e0296e" name="A" sub="(√3, 1)" dy={-8}/>
+                <text x={px(sq3)} y={py(1)-22} textAnchor="middle" fontSize="9" fill="#e0296e" fontWeight="700">Re &gt; 0 → droite ✓</text>
+              </g>
+            )}
+            {s>3 && (<g><Dot x={sq3} y={1} col="#e0296e"/><Lbl x={sq3} y={1} col="#e0296e" name="A" dy={-8}/></g>)}
+
+            {/* ── B ── */}
+            {has('B2') && (
+              <g style={fi}>
+                <line x1={px(-1)} y1={12} x2={px(-1)} y2={SVH-12} stroke="#f59e0b" strokeWidth="1.8" strokeDasharray="6 3"/>
+                <text x={px(-1)+4} y={16} fontSize="10" fill="#f59e0b" fontWeight="700">x=−1</text>
+                <circle cx={px(-1)} cy={py(sq3)}  r={7} fill="none" stroke="#f59e0b" strokeWidth="2" strokeDasharray="3 2"/>
+                <circle cx={px(-1)} cy={py(-sq3)} r={7} fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="3 2"/>
+                <text x={px(-1)+10} y={py(-sq3)+4} fontSize="9" fill="#94a3b8">−1−i√3</text>
+              </g>
+            )}
+            {has('B3') && (
+              <g style={fi}>
+                <circle cx={px(-1)} cy={py(-sq3)} r={6} fill="#cbd5e1" opacity="0.5"/>
+                <line x1={OX} y1={py(sq3)} x2={px(-1)} y2={py(sq3)} stroke="#f59e0b" strokeWidth="1" strokeDasharray="2 2"/>
+                <line x1={px(-1)} y1={OY} x2={px(-1)} y2={py(sq3)} stroke="#f59e0b" strokeWidth="1" strokeDasharray="2 2"/>
+                <Dot x={-1} y={sq3} col="#f59e0b" r={6}/>
+                <Lbl x={-1} y={sq3} col="#f59e0b" name="B" sub="(−1, √3)" dx={-58} dy={-8}/>
+                <text x={px(-1)+8} y={py(sq3)-22} fontSize="9" fill="#f59e0b" fontWeight="700">Im &gt; 0 → dessus ✓</text>
+              </g>
+            )}
+            {s>6 && (<g><Dot x={-1} y={sq3} col="#f59e0b"/><Lbl x={-1} y={sq3} col="#f59e0b" name="B" dx={-20} dy={-8}/></g>)}
+
+            {/* ── C ── */}
+            {has('C1') && (
+              <g style={fi}>
+                <Dot x={2} y={0} col="#3b82f6" r={6}/>
+                <Lbl x={2} y={0} col="#3b82f6" name="C" sub="(2, 0)" dx={8} dy={-8}/>
+              </g>
+            )}
+            {s>7 && (<g><Dot x={2} y={0} col="#3b82f6"/><Lbl x={2} y={0} col="#3b82f6" name="C" dx={8} dy={-8}/></g>)}
+
+            {/* ── H ── */}
+            {has('H1') && (
+              <g style={fi}>
+                <line x1={px(extBC(-1.2).x)} y1={py(extBC(-1.2).y)} x2={px(extBC(2.6).x)} y2={py(extBC(2.6).y)} stroke="#f97316" strokeWidth="2"/>
+                <text x={px(extBC(2.4).x)+4} y={py(extBC(2.4).y)-5} fontSize="10" fill="#f97316" fontWeight="700">(BC)</text>
+                <line x1={px(extPerp(-2).x)} y1={py(extPerp(-2).y)} x2={px(extPerp(2.2).x)} y2={py(extPerp(2.2).y)} stroke="#e0296e" strokeWidth="2" strokeDasharray="7 3"/>
+                <text x={px(extPerp(-1.8).x)+4} y={py(extPerp(-1.8).y)-5} fontSize="10" fill="#e0296e" fontWeight="700">⊥(BC) par A</text>
+                {(()=>{ const ang=Math.atan2(-BCdy,-BCdx),s2=Math.sin(ang+Math.PI/2),c2=Math.cos(ang+Math.PI/2),co=Math.cos(ang),si=Math.sin(ang),d=11;
+                  return <polyline points={px(sq3)+d*co+','+(py(1)-d*si)+' '+(px(sq3)+d*co+d*c2)+','+(py(1)-d*si-d*s2)+' '+(px(sq3)+d*c2)+','+(py(1)-d*s2)} fill="none" stroke="#e0296e" strokeWidth="1.8"/>; })()}
+              </g>
+            )}
+            {has('H2') && (
+              <g style={fi}>
+                <line x1={px(-0.3)} y1={py(-0.3)} x2={px(3.8)} y2={py(3.8)} stroke="#8b5cf6" strokeWidth="2" strokeDasharray="7 3"/>
+                <path d={"M "+(OX+34)+","+OY+" A 34,34 0 0,0 "+(OX+34*Math.cos(Math.PI/4))+","+(OY-34*Math.sin(Math.PI/4))} fill="none" stroke="#8b5cf6" strokeWidth="1.5"/>
+                <text x={OX+36} y={OY-16} fontSize="10" fill="#8b5cf6" fontWeight="700">π/4</text>
+                <text x={px(3.5)+4} y={py(3.5)-6} fontSize="10" fill="#8b5cf6" fontWeight="700">arg=π/4</text>
+              </g>
+            )}
+            {has('H3') && (
+              <g style={fi}>
+                <circle cx={px(sq3+1)} cy={py(sq3+1)} r={16} fill="rgba(16,185,129,0.18)" stroke="#10b981" strokeWidth="2"/>
+                <line x1={OX} y1={py(sq3+1)} x2={px(sq3+1)} y2={py(sq3+1)} stroke="#10b981" strokeWidth="1" strokeDasharray="2 2"/>
+                <line x1={px(sq3+1)} y1={OY} x2={px(sq3+1)} y2={py(sq3+1)} stroke="#10b981" strokeWidth="1" strokeDasharray="2 2"/>
+                <Dot x={sq3+1} y={sq3+1} col="#10b981" r={7}/>
+                <Lbl x={sq3+1} y={sq3+1} col="#10b981" name="H" sub={"(√3+1, √3+1)"} dx={10} dy={-8}/>
+              </g>
+            )}
+          </svg>
+        </div>
+
+        <div style={{ width:'158px', flexShrink:0, background:'#1e293b', borderRadius:'10px', padding:'12px', minHeight:'260px' }}>
+          {info && info.title ? (
+            <>
+              <div style={{ background:info.color, borderRadius:'6px', padding:'5px 8px', fontSize:'11px', fontWeight:700, color:'white', marginBottom:'10px' }}>
+                {info.title}
+              </div>
+              {info.lines.map((l,i) => (
+                <div key={i} style={{ fontSize:'11px', color: i===info.lines.length-1 ? '#86efac' : '#cbd5e1',
+                  fontWeight: i===info.lines.length-1 ? 700 : 400, marginBottom:'5px' }}>{l}</div>
+              ))}
+            </>
+          ) : (
+            <div style={{ color:'#475569', fontSize:'11px', marginTop:'20px', textAlign:'center' }}>
+              {s < 0 ? "Lance l'animation →" : 'Plan complexe prêt'}
+            </div>
+          )}
+          <div style={{ marginTop:'14px', borderTop:'1px solid #334155', paddingTop:'10px' }}>
+            <div style={{ fontSize:'10px', color:'#475569', fontWeight:600, marginBottom:'6px' }}>TECHNIQUE (3 étapes)</div>
+            {['① Module → cercle','② Partie entière → droite','③ Signe irrationnel → point'].map((t,i) => (
+              <div key={i} style={{ fontSize:'10px', color:'#64748b', marginBottom:'4px' }}>
+                <span style={{ color:['#6366f1','#e0296e','#f59e0b'][i] }}>●</span> {t}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display:'flex', gap:'7px', marginTop:'10px', alignItems:'center', flexWrap:'wrap' }}>
+        {s < 0 ? (
+          <button onClick={start} style={{ padding:'8px 20px', background:'#6366f1', color:'white', border:'none', borderRadius:'8px', fontWeight:700, cursor:'pointer', fontSize:'13px' }}>▶ Lancer</button>
+        ) : (
+          <>
+            <button onClick={() => setStep(s => Math.max(0,s-1))} style={{ padding:'6px 12px', background:'#334155', color:'white', border:'none', borderRadius:'7px', cursor:'pointer', fontSize:'12px', opacity:s>0?1:0.4 }}>◀</button>
+            <button onClick={() => setStep(s => Math.min(STEPS.length-1,s+1))} style={{ padding:'6px 12px', background:'#6366f1', color:'white', border:'none', borderRadius:'7px', cursor:'pointer', fontSize:'12px', opacity:s<STEPS.length-1?1:0.4 }}>▶</button>
+            <button onClick={restart} style={{ padding:'6px 12px', background:'#475569', color:'white', border:'none', borderRadius:'7px', cursor:'pointer', fontSize:'12px' }}>↺</button>
+            <button onClick={() => { setStep(0); setPlaying(true); }} style={{ padding:'6px 12px', background:'#10b981', color:'white', border:'none', borderRadius:'7px', cursor:'pointer', fontSize:'12px' }}>▶ Auto</button>
+            <span style={{ color:'#94a3b8', fontSize:'11px' }}>{s+1}/{STEPS.length} — {STEPS[s]?.label}</span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+
 const StatTable = ({ data }) => (
   <div className="stat-table-wrap">
     <table className="stat-table">
@@ -112,159 +347,166 @@ function Rec({ prop, verif, suppo, demo }) {
 
 // ── T1-E1 ─────────────────────────────────────────────────────────────────────
 function T1E1() { return (<>
-  <Step index={0} title={<>Déterminant de <IM t={T.A} /></>}>
-    <p>On a <IM t={T.matA} /></p>
-    <IB label="Méthode">Développement 1ère ligne</IB>
-    <BM t={T.detL} /><BM t={T.detC1} /><BM t={T.detC2} />
-    <RB><IM t={T.detNeq} /> ⟹ <IM t={T.A} /> <strong>inversible</strong> ✓</RB>
+  <Step index={0} title={<>Solution <IM t="z_1" /></>}>
+    <p>On donne l\'équation <IM t={T.T1E1_E} /></p>
+    <IB label="Vérification">Pour <IM t={T.T1E1_z1} /> :</IB>
+    <BM t={T.T1E1_verif1} /><BM t={T.T1E1_verif2} /><BM t={T.T1E1_verif3} />
+    <RB>Donc <IM t="z_1" /> est bien une solution de (E) ✓</RB>
   </Step>
-  <Step index={1} title={<>Calcul de <IM t={T.A2} /></>}>
-    <p>On calcule <IM t={T.A2P} /> :</p><BM t={T.A2Pm} />
-    <IB label="Détail 1ère ligne"><CR label="col 1" fkey="A2R1a" /><CR label="col 2" fkey="A2R1b" /><CR label="col 3" fkey="A2R1c" /></IB>
-    <RB><BM t={T.A2R} /></RB>
+  <Step index={1} title={<>L\'autre solution <IM t="z_2" /></>}>
+    <IB label="Astuce">La somme des racines est <IM t="-\frac{b}{a}" /></IB>
+    <BM t={T.T1E1_sum} />
+    <p>On en déduit :</p>
+    <BM t={T.T1E1_z2} />
+    <RB>La deuxième solution est <IM t={T.T1E1_z2} /> ✓</RB>
   </Step>
-  <Step index={2} title={<>Calcul de <IM t={T.BdefT} /></>}>
-    <BM t={T.Bsub} /><RB><BM t={T.Bres} /></RB>
+  <Step index={2} title={<>Points sur le cercle <IM t="\zeta" /></>}>
+    <BM t={T.T1E1_zA} /><BM t={T.T1E1_zB} />
+    <RB><IM t={T.T1E1_cer} /> ✓</RB>
   </Step>
-  <Step index={3} title={<>Montrer que <IM t={T.A3eq} /></>}>
-    <p>On a <IM t={T.A3f} /></p><BM t={T.ABP} />
-    <IB label="Détail 1ère ligne"><CR label="(1,1)" fkey="ABR1a" /><CR label="(1,2)" fkey="ABR1b" /><CR label="(1,3)" fkey="ABR1c" /></IB>
-    <RB><BM t={T.ABR} /></RB>
+  <Step index={3} title={<>Calcul de <IM t="\frac{z_B + z_C}{z_C - z_B}" /></>}>
+    <BM t={T.T1E1_frac1} /><BM t={T.T1E1_frac2} />
+    <RB>Le résultat est bien <IM t="i\frac{\sqrt{3}}{3}" /> ✓</RB>
   </Step>
-  <Step index={4} title={<>Déduire <IM t={T.Ainv} /></>}>
-    <p>On a <IM t={T.AXB} /> :</p><BM t={T.AiFr} /><RB><BM t={T.AiR} /></RB>
+  <Step index={4} title={<>Orthogonalité des droites <IM t="(AH)" /> et <IM t="(BC)" /></>}>
+    <BM t={T.T1E1_perp1} /><BM t={T.T1E1_perp2} />
+    <RB>Les droites <IM t="(AH)" /> et <IM t="(BC)" /> sont perpendiculaires ✓</RB>
   </Step>
-  <Step index={5} title={<>Résolution de <IM t={T.S} /></>}>
-    <p>Forme <IM t={T.AXY} /> avec <IM t={T.Ymat} /></p><BM t={T.Xc} />
-    <IB label="Détail x"><BM t={T.Xc1} /></IB>
-    <RB><BM t={T.XR} /></RB>
+  <Step index={5} title={<>Affixe de <IM t="H" /></>}>
+    <BM t={T.T1E1_zH1} /><BM t={T.T1E1_zH2} />
+    <RB>On obtient bien <IM t="z_H = \sqrt{2}(1 + \sqrt{3})e^{i\frac{\pi}{4}}" /> ✓</RB>
   </Step>
-  <Step index={6} title={<>Déduction pour <IM t={T.Sp} /></>}>
-    <IB label="Astuce">Poser <IM t={T.lnSub} /></IB>
-    <BM t={T.lnSys} />
-    <p>Même solution. Exponentielle :</p><BM t={T.lnF} />
-    <RB><IM t={T.solSet} /></RB>
+  <Step index={6} title={<>Construction des points <IM t="A, B" /> et <IM t="H" /></>}>
+    <div style={{ maxWidth: '400px', margin: '0 auto' }}>
+      <ComplexAnimation />
+    </div>
+    <RB>Les points sont placés dans le plan complexe ✓</RB>
   </Step>
 </>)}
 
 // ── T1-E2 ─────────────────────────────────────────────────────────────────────
 function T1E2() { return (<>
-  <Step index={0} title={<>Calcul de <IM t="U_1, U_2, U_3" /></>}>
-    <IB label="Formule"><IM t="U_{n+1}=\dfrac{1}{U_n}+\dfrac{U_n}{2}" /></IB>
-    <BM t={T.T1E2_U0} /><BM t={T.T1E2_U2} /><BM t={T.T1E2_U3} />
-    <IB label="Test arithmétique — condition a+c=2b">
-      <BM t={T.T1E2_arith} />
-    </IB>
-    <IB label="Test géométrique — condition a×c=b²">
-      <BM t={T.T1E2_geom} />
-    </IB>
-    <RB>La suite n'est <strong>ni arithmétique ni géométrique</strong> ✓</RB>
+  <Step index={0} title={<>Équation cartésienne du plan <IM t="P" /></>}>
+    <BM t={T.T1E2_AB} /><BM t={T.T1E2_ABAC} /><BM t={T.T1E2_plan1} />
+    <BM t={T.T1E2_plan2} /><BM t={T.T1E2_plan3} />
+    <RB>L\'équation de <IM t="P" /> est bien <IM t="x - y + z + 1 = 0" /> ✓</RB>
   </Step>
-  <Step index={1} title={<>Identité <IM t="U_{n+1}-\sqrt{2}=\frac{(U_n-\sqrt{2})^2}{2U_n}" /></>}>
-    <BM t={T.T1E2_rec} /><RB>Identité vérifiée ✓</RB>
+  <Step index={1} title={<>Projeté orthogonal <IM t="H" /> de <IM t="I" /></>}>
+    <BM t={T.T1E2_H1} /><BM t={T.T1E2_H2} />
+    <RB><IM t="H" /> est bien le projeté orthogonal de <IM t="I" /> sur <IM t="P" /> ✓</RB>
   </Step>
-  <Step index={2} title={<>Montrer que <IM t="U_n\geq\sqrt{2}" /> pour tout <IM t="n\in\mathbb{N}" /></>}>
-    <Rec
-      prop={<><IM t="P(n)" /> : <IM t="U_n\geq\sqrt{2}" /></>}
-      verif={<><p><strong>n = 0 :</strong></p><BM t="U_0=2\geq\sqrt{2}\approx1{,}41" /><p>✓ vrai au rang 0</p></>}
-      suppo={<><p>Supposons <IM t="U_n\geq\sqrt{2}" /> pour un <IM t="n" /> fixé.</p><p>On veut montrer <IM t="U_{n+1}\geq\sqrt{2}" />.</p></>}
-      demo={<><p>D'après l'identité démontrée à l'étape précédente :</p><BM t={T.T1E2_pos} /><p>Donc <IM t="U_{n+1}\geq\sqrt{2}" /> ✓</p></>}
-    />
-    <RB>Par récurrence : <IM t="U_n\geq\sqrt{2}" /> pour tout <IM t="n\in\mathbb{N}" /> ✓</RB>
+  <Step index={2} title={<>La sphère <IM t="S" /> et ses points</>}>
+    <BM t={T.T1E2_S1} /><BM t={T.T1E2_S2} />
+    <BM t={T.T1E2_S3} /><BM t={T.T1E2_S4} />
+    <RB><IM t="A" /> et <IM t="B" /> appartiennent à <IM t="S" /> ✓</RB>
   </Step>
-  <Step index={3} title="Suite décroissante et convergente">
-    <p>On calcule <IM t="U_{n+1}-U_n" /> :</p>
-    <BM t={T.T1E2_dec} /><BM t={T.T1E2_dec2} /><BM t={T.T1E2_lim} />
-    <RB>Suite <strong>minorée</strong> par <IM t="\sqrt{2}" /> et <strong>décroissante</strong> ⟹ <strong>convergente</strong> d'après le théorème des suites monotones bornées ✓</RB>
+  <Step index={3} title={<>Intersection <IM t="P \cap S" /> et la droite <IM t="(AB)" /></>}>
+    <BM t={T.T1E2_dIP} /><BM t={T.T1E2_dIP2} />
+    <BM t={T.T1E2_r} />
+    <BM t={T.T1E2_ABinP} />
+    <RB>Le cercle <IM t="\mathscr{C}" /> est coupé par <IM t="(AB)" /> en <IM t="A" /> et <IM t="B" /> ✓</RB>
   </Step>
-  <Step index={4} title={<>Limite <IM t="\ell" /></>}>
-    <p>À la limite <IM t="f(\ell)=\ell" /> :</p>
-    <BM t={T.T1E2_fL} /><RB><IM t="\ell=\sqrt{2}" /></RB>
+  <Step index={4} title={<>Le plan <IM t="Q" /></>}>
+    <BM t={T.T1E2_Q1} /><BM t={T.T1E2_Q2} />
+    <RB><IM t="P" /> et <IM t="Q" /> sont sécants suivant <IM t="(AB)" /> ✓</RB>
+  </Step>
+  <Step index={5} title={<>Produit scalaire <IM t="\overrightarrow{IE} \cdot \overrightarrow{IM} = 0" /></>}>
+    <BM t={T.T1E2_E} /><BM t={T.T1E2_orth} />
+    <RB>Condition vérifiée si et seulement si <IM t="M \in Q" /> ✓</RB>
+  </Step>
+  <Step index={6} title={<>Triangle <IM t="IME" /> rectangle isocèle</>}>
+    <BM t={T.T1E2_M1} /><BM t={T.T1E2_M2} /><BM t={T.T1E2_M3} />
+    <RB>L\'ensemble des points est <IM t="\{A, B\}" /> ✓</RB>
   </Step>
 </>)}
 
 // ── T1-E3 ─────────────────────────────────────────────────────────────────────
-const STATS_PTS = [[0,398],[1,451],[2,423],[3,501],[4,673],[5,956],[6,1077],[7,1255],[8,1427],[9,1500]]
 function T1E3() { return (<>
-  <Step index={0} title="Calcul de U̅ et V̅">
-    <IB label="Données">Rangs xi ∈ [0;9], dépenses yi (millions DT)</IB>
-    <StatTable data={[
-      { label: "Moyennes", f: "\\bar{x}, \\bar{y}", r: "\\bar{x}=4{,}5,\\quad \\bar{y}=766{,}1" },
-      { label: "Droite de Mayer", f: "y = ax + b", r: "y=150{,}76x+187{,}68" }
-    ]} />
-    <div className="section-label">Nuage de points</div>
-    <ScatterPlot
-      points={STATS_PTS}
-      xLabel="Rang xi" yLabel="yi (M DT)"
-      xmin={-0.5} xmax={9.5} ymin={200} ymax={1600}
-      xticks={[0,1,2,3,4,5,6,7,8,9]}
-      yticks={[400,600,800,1000,1200,1400,1600]}
-      lines={[{ a: 150.76, b: 187.68, color: '#e0296e' }]}
-      title="Nuage de points + Droite de Mayer (en rose)"
+  <Step index={0} title={<>Montrer <IM t="0 < U_n \leqslant 2" /></>}>
+    <Rec
+      prop={<IM t="P(n) : 0 < U_n \\leqslant 2" />}
+      verif={<BM t={T.T1E3_rec1} />}
+      suppo={<p>On suppose <IM t="0 < U_n \leqslant 2" /> vrai pour un certain <IM t="n" />.</p>}
+      demo={<BM t={T.T1E3_rec2} />}
     />
-    <RB>Estimation 2025 (rang 10) : <BM t={T.T1E3_est2025} /></RB>
+    <RB>Propriété démontrée par récurrence ✓</RB>
   </Step>
-  <Step index={1} title="Ajustement exponentiel — Z = ln(Y)">
-    <StatTable data={[
-      { label: "Corrélation r", f: "r(X,Z)", r: "\\approx 0{,}97" },
-      { label: "Droite de Z en X", f: "Z = aX + b", r: "Z=0{,}263x+5{,}68" }
-    ]} />
-    <RB>Estimation 2025 : <BM t={T.T1E3_Y2025} /></RB>
+  <Step index={1} title={<>Monotonie de <IM t="(U_n)" /></>}>
+    <BM t={T.T1E3_diff1} /><BM t={T.T1E3_diff2} />
+    <RB>La suite <IM t="(U_n)" /> est croissante ✓</RB>
   </Step>
-  <Step index={2} title="Quel ajustement choisir ?">
-    <IB label="Réalité 2023">68,9 × 0,028 ≈ 1929 M DT (rang 8)</IB>
-    <IB label="Affine (rang 8)"><IM t="150{,}76\times8+187{,}68=1393{,}76" /></IB>
-    <IB label="Exponentiel (rang 8)"><IM t="e^{0{,}263\times8+5{,}68}\approx2398" /></IB>
-    <RB>L'ajustement <strong>affine</strong> est le plus proche ✓</RB>
+  <Step index={2} title={<>Convergence de <IM t="(U_n)" /></>}>
+    <BM t={T.T1E3_lim1} /><BM t={T.T1E3_lim2} />
+    <RB>La limite de <IM t="(U_n)" /> est <IM t="2" /> ✓</RB>
+  </Step>
+  <Step index={3} title={<>Suite <IM t="(V_n)" /></>}>
+    <BM t={T.T1E3_Vrec} /><BM t={T.T1E3_V0} />
+    <RB>Suite géométrique de raison <IM t="\frac{1}{2}" /> et de premier terme <IM t="\ln 2" /> ✓</RB>
+  </Step>
+  <Step index={4} title={<>Somme <IM t="S_n" /></>}>
+    <BM t={T.T1E3_Sn} /><BM t={T.T1E3_Snlim} />
+    <RB><IM t="S_n = 2\ln 2 \left(1 - \left(\frac{1}{2}\right)^n\right)" /> et sa limite est <IM t="\ln 4" /> ✓</RB>
+  </Step>
+  <Step index={5} title={<>Limite de <IM t="e^{\ln 2 - \frac{S_n}{n}}" /></>}>
+    <BM t={T.T1E3_L1} /><BM t={T.T1E3_L2} /><BM t={T.T1E3_L3} />
+    <RB>La limite finale est bien <IM t="2" /> ✓</RB>
   </Step>
 </>)}
 
 // ── T1-E4 ─────────────────────────────────────────────────────────────────────
-function T1E4() {
-  const f14 = x => x - Math.E * Math.log(x)
-  const delta = x => x
-  return (<>
-    <Step index={0} title="Limites et comportement">
-      <BM t={T.T1E4_f} />
-      <IB label="En 0⁺"><BM t={T.T1E4_lim0} /> → asymptote verticale en x=0</IB>
-      <IB label="En +∞"><BM t={T.T1E4_liminf} /> → pas d'asymptote horizontale</IB>
-      <IB label="Pente à l'infini"><IM t="\lim_{x\to+\infty}\frac{f(x)}{x}=1" /> → la droite Δ: y=x est asymptote oblique</IB>
-    </Step>
-    <Step index={1} title="Dérivée et tableau de variation">
-      <BM t={T.T1E4_fp} />
-      <IB label="Signe de f'(x)"><BM t={T.T1E4_tab} /></IB>
-      <div className="section-label">Tableau de variation</div>
-      <VariationTable
-        xVals={[{ tex: '0^+' }, { tex: 'e' }, { tex: '+\\infty' }]}
-        signs={['-', '+']}
-        arrows={['down', 'up']}
-        fVals={[{ tex: '+\\infty', pos: 'top' }, { tex: '0', pos: 'bot' }, { tex: '+\\infty', pos: 'top' }]}
-      />
-      <RB>Minimum en <IM t="x=e" /> : <BM t={T.T1E4_min} /></RB>
-    </Step>
-    <Step index={2} title="Courbe (C) et droite Δ: y=x">
-      <div className="section-label">Tracé de la courbe</div>
-      <FunctionCurve
-        fn={f14}
-        xmin={0.15} xmax={6} ymin={-0.5} ymax={6}
-        xticks={[1,2,3,4,5]} yticks={[0,1,2,3,4,5]}
-        title="(C): f(x) = x − e·ln(x)  et  Δ: y = x (en pointillé)"
-        extra={[{ type:'fn', fn: delta, color:'#e0296e', dash: true }]}
-      />
-      <IB label="Position de (C) et Δ">Pour <IM t="x>0" /> : <IM t="f(x)-x=-e\ln x" />. Signe = signe de <IM t="-\ln x" /></IB>
-      <IB label="Conclusion"><IM t="(C)" /> au-dessus de Δ pour <IM t="x\in]0;1[" />, en dessous pour <IM t="x>1" /></IB>
-    </Step>
-    <Step index={3} title="Primitive F et intégrale">
-      <p>On vérifie <IM t="g'(x)=e\ln x" /> :</p>
-      <BM t={T.T1E4_gp} />
-      <IB label="Primitive de f s'annulant en 1"><BM t={T.T1E4_F} /></IB>
-      <div className="section-label">Calcul de l'intégrale</div>
-      <BM t={T.T1E4_I} />
-      <BM t={T.T1E4_I2} />
-      <RB><BM t={T.T1E4_Ires} /></RB>
-    </Step>
-  </>)
-}
+function T1E4() { return (<>
+  <Step index={0} title={<>Limites en <IM t="-\infty" /></>}>
+    <BM t={T.T1E4_limM1} /><BM t={T.T1E4_limM2} />
+    <RB>Asymptote horizontale en <IM t="-\infty" /> ✓</RB>
+  </Step>
+  <Step index={1} title={<>Dérivée et variations de <IM t="f" /></>}>
+    <BM t={T.T1E4_fp1} /><BM t={T.T1E4_fp2} />
+    <VariationTable xVals={[{tex: "-\\infty"}, {tex: "-1"}, {tex: "0"}, {tex: "+\\infty"}]}
+                    signs={["+", "-", "+"]}
+                    arrows={["up", "down", "up"]}
+                    fVals={[{tex: "0", pos: "bot"}, {tex: "\\frac{3}{e}", pos: "top"}, {tex: "1", pos: "bot"}, {tex: "+\\infty", pos: "top"}]} />
+    <RB>Tableau de variations complet ✓</RB>
+  </Step>
+  <Step index={2} title={<>Bijection sur <IM t="[0, 1]" /></>}>
+    <BM t={T.T1E4_bij1} /><BM t={T.T1E4_bij2} />
+    <RB><IM t="f" /> réalise une bijection sur l\'intervalle <IM t="J = [1, e]" /> ✓</RB>
+  </Step>
+  <Step index={3} title={<>Tangente en <IM t="0" /></>}>
+    <BM t={T.T1E4_T0} />
+    <RB>Tangente horizontale d\'équation <IM t="y = 1" /> ✓</RB>
+  </Step>
+  <Step index={4} title={<>Suite <IM t="(I_n)" /></>}>
+    <BM t={T.T1E4_In1} /><BM t={T.T1E4_In2} />
+    <RB>La suite <IM t="(I_n)" /> est positive et décroissante ✓</RB>
+  </Step>
+  <Step index={5} title={<>Limite de <IM t="(I_n)" /></>}>
+    <BM t={T.T1E4_Inlim1} /><BM t={T.T1E4_Inlim2} />
+    <RB>La limite est <IM t="0" /> d\'après le théorème des gendarmes ✓</RB>
+  </Step>
+  <Step index={6} title={<>Valeur moyenne</>}>
+    <IB label="Intégration par parties">Pour <IM t="I_0" /></IB>
+    <BM t={T.T1E4_IPP1} /><BM t={T.T1E4_IPP2} />
+    <BM t={T.T1E4_Vmoy} />
+    <RB>La valeur moyenne est <IM t="2e - 4" /> ✓</RB>
+  </Step>
+  <Step index={7} title={<>Tracé de la courbe <IM t="(\mathcal{C}_f)" /></>}>
+    <FunctionCurve
+      fn={(x) => (x * x - x + 1) * Math.exp(x)}
+      xmin={-4} xmax={1.5}
+      ymin={-0.5} ymax={5}
+      xticks={[-4, -3, -2, -1, 0, 1]}
+      yticks={[0, 1, 2, 3, 4, 5]}
+      title={<>Courbe représentative de <IM t="f(x) = (x^2-x+1)e^x" /></>}
+      animated={true}
+      extra={[
+        { type: 'hline', y: 0, color: '#94a3b8' }, 
+        { type: 'hline', y: 1, color: '#e0296e', dash: true },
+        { type: 'point', x: 0, y: 1, color: '#dc2626' }
+      ]}
+    />
+    <RB>La courbe admet l'axe des abscisses pour asymptote horizontale en <IM t="-\infty" /> et une tangente horizontale en <IM t="x=0" />.</RB>
+  </Step>
+</>)}
 
 // ── T2-E1 ─────────────────────────────────────────────────────────────────────
 function T2E1() { return (<>
@@ -396,103 +638,290 @@ function T2E4() {
 </>)}
 
 // ── T3-E1 ─────────────────────────────────────────────────────────────────────
-function T3E1() { return (<>
-  <Step index={0} title={<>Déterminant de <IM t="A" /></>}>
-    <p><IM t={T.T3E1_matA3} /></p>
-    <BM t={T.T3E1_detA3} /><RB><BM t={T.T3E1_detA3b} /></RB>
-  </Step>
-  <Step index={1} title={<>Calcul de <IM t="A\times B" /> et <IM t="A^{-1}" /></>}>
-    <BM t={T.T3E1_AB3} /><BM t={T.T3E1_AB3r} />
-    <RB><BM t={T.T3E1_Ainv3} /></RB>
-  </Step>
-  <Step index={2} title="Résolution du système (S)">
-    <BM t={T.T3E1_sysSol} /><BM t={T.T3E1_XR3} />
-    <RB><IM t="x=4,\quad y=12,\quad z=-1" /></RB>
-  </Step>
-  <Step index={3} title={<>Suite <IM t="U_{n+1}=4U_n+12n-1" /></>}>
-    <IB label="Système">On utilise <IM t="U_1=3,\;U_2=13,\;U_3=115" /> et on résout <IM t="(S)" /></IB>
-    <RB><IM t="a=4,\quad b=12,\quad c=-1\implies U_{n+1}=4U_n+12n-1" /></RB>
-  </Step>
-</>)}
+function T3E1() {
+  return (<>
+    <Step index={0} title={<>Partie I - 1) Vérification de l'identité complexe</>}>
+      <p>On souhaite montrer que pour tout réel <IM t="a \in [0, \pi]" /> :</p>
+      <BM t="e^{2ia} - 2ie^{ia}\sin a = 1" />
+      <IB label="Formule d'Euler">On utilise <IM t="\sin a = \dfrac{e^{ia} - e^{-ia}}{2i}" />, ce qui donne <IM t="2i\sin a = e^{ia} - e^{-ia}" /></IB>
+      <p>Développons le terme de gauche :</p>
+      <BM t="2ie^{ia}\sin a = e^{ia}(e^{ia} - e^{-ia}) = e^{2ia} - e^0 = e^{2ia} - 1" />
+      <p>Par soustraction :</p>
+      <BM t="e^{2ia} - 2ie^{ia}\sin a = e^{2ia} - (e^{2ia} - 1) = 1" />
+      <RB>L'égalité est bien vérifiée ✓</RB>
+    </Step>
+    <Step index={1} title={<>Partie I - 2) Résolution de l'équation du second degré</>}>
+      <p>Résolvons dans <IM t="\mathbb{C}" /> :</p>
+      <BM t="z^2 - 2e^{ia}z + 2ie^{ia}\sin a = 0" />
+      <IB label="Calcul du discriminant">On calcule <IM t="\Delta = b^2 - 4ac" /> :</IB>
+      <BM t="\Delta = (-2e^{ia})^2 - 4(2ie^{ia}\sin a) = 4e^{2ia} - 8ie^{ia}\sin a = 4(e^{2ia} - 2ie^{ia}\sin a)" />
+      <p>D'après la question précédente, le terme entre parenthèses vaut 1 :</p>
+      <BM t="\Delta = 4 \times 1 = 4" />
+      <p>Le discriminant admet pour racine carrée complexe <IM t="\delta = 2" />. Les solutions sont :</p>
+      <BM t="z_1 = \dfrac{2e^{ia} + 2}{2} = e^{ia} + 1 \quad \text{et} \quad z_2 = \dfrac{2e^{ia} - 2}{2} = e^{ia} - 1" />
+      <RB>Les solutions sont <IM t="S = \{e^{ia} - 1, \; e^{ia} + 1\}" /> ✓</RB>
+    </Step>
+    <Step index={2} title={<>Partie II - 1.a) Propriétés géométriques de M, M' et M''</>}>
+      <p>Soient les affixes <IM t="z_M = e^{ia}" />, <IM t="z_{M'} = e^{ia} - 1" /> et <IM t="z_{M''} = e^{ia} + 1" />.</p>
+      <IB label="Milieu de [M'M'']">L'affixe du milieu de <IM t="[M'M'']" /> est :</IB>
+      <BM t="\dfrac{z_{M'} + z_{M''}}{2} = \dfrac{(e^{ia} - 1) + (e^{ia} + 1)}{2} = \dfrac{2e^{ia}}{2} = e^{ia} = z_M" />
+      <p>Donc <IM t="M" /> est bien le milieu du segment <IM t="[M'M'']" />.</p>
+      <IB label="Vecteur \overrightarrow{MM'}">Calculons l'affixe du vecteur <IM t="\overrightarrow{MM'}" /> :</IB>
+      <BM t="z_{M'} - z_M = (e^{ia} - 1) - e^{ia} = -1" />
+      <p>Puisque le vecteur unitaire <IM t="\vec{u}" /> a pour affixe 1, on a :</p>
+      <BM t="\overrightarrow{MM'} = -\vec{u}" />
+      <RB><IM t="M" /> est le milieu de <IM t="[M'M'']" /> et <IM t="\overrightarrow{MM'} = -\vec{u}" /> ✓</RB>
+    </Step>
+    <Step index={3} title={<>Partie II - 1.b) Construction géométrique pour a ∈ ]0, π/6[</>}>
+      <p>Puisque <IM t="a \in \left]0, \frac{\pi}{6}\right[" />, le point <IM t="M = e^{ia}" /> est situé sur le cercle trigonométrique dans le premier quadrant (angle aigu faible).</p>
+      <p>Les points <IM t="M'" /> et <IM t="M''" /> se déduisent de <IM t="M" /> par des translations horizontales de vecteur <IM t="-\vec{u}" /> et <IM t="\vec{u}" /> respectively (car <IM t="M" /> est le milieu de <IM t="[M'M'']" /> et <IM t="\overrightarrow{MM'} = -\vec{u}" />).</p>
+      <RB>Pour construire <IM t="M'" /> et <IM t="M''" />, on trace la droite horizontale passant par <IM t="M" /> et on place les points à une distance de 1 à gauche et à droite de <IM t="M" /> ✓</RB>
+    </Step>
+    <Step index={4} title={<>Partie II - 2.a) Triangle OM'M'' rectangle</>}>
+      <IB label="Longueur OM">On a <IM t="OM = |z_M| = |e^{ia}| = 1" /></IB>
+      <IB label="Longueur M'M''">On a <IM t="M'M'' = |z_{M''} - z_{M'}| = |(e^{ia}+1) - (e^{ia}-1)| = |2| = 2" /></IB>
+      <p>On constate que :</p>
+      <BM t="OM = 1 = \dfrac{1}{2} M'M''" />
+      <p>Dans le triangle <IM t="OM'M''" />, la longueur de la médiane issue de <IM t="O" /> est égale à la moitié de la longueur du côté opposé <IM t="[M'M'']" />.</p>
+      <RB>Le triangle <IM t="OM'M''" /> est donc rectangle en <IM t="O" /> ✓</RB>
+    </Step>
+    <Step index={5} title={<>Partie II - 2.b) Condition pour que le triangle soit isoscèle</>}>
+      <p>Puisque le triangle est rectangle en <IM t="O" />, il est isoscèle en <IM t="O" /> si et seulement si les longueurs des deux côtés de l'angle droit sont égales, soit <IM t="OM' = OM''" /> (ou <IM t="OM'^2 = OM''^2" />) :</p>
+      <BM t="OM'^2 = |e^{ia} - 1|^2 = (\cos a - 1)^2 + \sin^2 a = \cos^2 a - 2\cos a + 1 + \sin^2 a = 2 - 2\cos a" />
+      <BM t="OM''^2 = |e^{ia} + 1|^2 = (\cos a + 1)^2 + \sin^2 a = \cos^2 a + 2\cos a + 1 + \sin^2 a = 2 + 2\cos a" />
+      <p>L'égalité des longueurs donne :</p>
+      <BM t="2 - 2\cos a = 2 + 2\cos a \iff 4\cos a = 0 \iff \cos a = 0" />
+      <p>Comme <IM t="a \in [0, \pi]" />, l'unique solution est :</p>
+      <BM t="a = \dfrac{\pi}{2}" />
+      <RB>Le triangle <IM t="OM'M''" /> est rectangle isoscèle si et seulement si <IM t="a = \frac{\pi}{2}" /> ✓</RB>
+    </Step>
+  </>)
+}
 
 // ── T3-E2 ─────────────────────────────────────────────────────────────────────
-function T3E2() { return (<>
-  <Step index={0} title="Graphe et Matrice">
-    <IB label="Graphe orienté"><BM t={T.T3E2_orient} /></IB>
-    <IB label="Arêtes"><BM t={T.T3E2_aretes} /></IB>
-    <RB><BM t={T.T3E2_eul} /></RB>
-  </Step>
-  <Step index={1} title="Chemins et Tournée minimale">
-    <IB label="Chemins de A à A (longueur 6)"><BM t={T.T3E2_M6} /></IB>
-    <IB label="Cycles complets"><BM t={T.T3E2_cyc} /></IB>
-    <RB>Durée minimale : <BM t={T.T3E2_poids} /></RB>
-  </Step>
-</>)}
+function T3E2() {
+  return (<>
+    <Step index={0} title={<>1.a) Composantes de le produit vectoriel</>}>
+      <p>On donne les points <IM t="A(-1,-1,3)" />, <IM t="B(0,-3,1)" /> et <IM t="C(-3,0,1)" />. Déterminons les vecteurs :</p>
+      <BM t="\overrightarrow{AB} = \begin{pmatrix} 0 - (-1) \\ -3 - (-1) \\ 1 - 3 \end{pmatrix} = \begin{pmatrix} 1 \\ -2 \\ -2 \end{pmatrix} \quad \text{et} \quad \overrightarrow{AC} = \begin{pmatrix} -3 - (-1) \\ 0 - (-1) \\ 1 - 3 \end{pmatrix} = \begin{pmatrix} -2 \\ 1 \\ -2 \end{pmatrix}" />
+      <p>Calculons le produit vectoriel <IM t="\overrightarrow{AB} \wedge \overrightarrow{AC}" /> :</p>
+      <BM t="\overrightarrow{AB} \wedge \overrightarrow{AC} = \begin{pmatrix} 1 \\ -2 \\ -2 \end{pmatrix} \wedge \begin{pmatrix} -2 \\ 1 \\ -2 \end{pmatrix} = \begin{pmatrix} (-2)(-2) - (-2)(1) \\ (-2)(-2) - (1)(-2) \\ (1)(1) - (-2)(-2) \end{pmatrix} = \begin{pmatrix} 4 + 2 \\ 4 + 2 \\ 1 - 4 \end{pmatrix} = \begin{pmatrix} 6 \\ 6 \\ -3 \end{pmatrix}" />
+      <RB>Le produit vectoriel a pour coordonnées <IM t="\begin{pmatrix} 6 \\ 6 \\ -3 \end{pmatrix}" /> ✓</RB>
+    </Step>
+    <Step index={1} title={<>1.b) Détermination du plan P</>}>
+      <p>Le produit vectoriel <IM t="\overrightarrow{AB} \wedge \overrightarrow{AC}" /> est un vecteur non nul.</p>
+      <p>Cela prouve que les vecteurs <IM t="\overrightarrow{AB}" /> et <IM t="\overrightarrow{AC}" /> ne sont pas colinéaires.</p>
+      <RB>Les points <IM t="A" />, <IM t="B" /> et <IM t="C" /> ne sont pas alignés, ils définissent donc de manière unique un plan <IM t="P" /> ✓</RB>
+    </Step>
+    <Step index={2} title={<>1.c) Équation cartésienne du plan P</>}>
+      <p>Le vecteur <IM t="\overrightarrow{AB} \wedge \overrightarrow{AC} = \begin{pmatrix} 6 \\ 6 \\ -3 \end{pmatrix}" /> est normal au plan <IM t="P" />. On peut simplifier en prenant le vecteur normal colinéaire :</p>
+      <BM t="\vec{n} = \dfrac{1}{3} \begin{pmatrix} 6 \\ 6 \\ -3 \end{pmatrix} = \begin{pmatrix} 2 \\ 2 \\ -1 \end{pmatrix}" />
+      <p>L'équation de <IM t="P" /> s'écrit sous la forme <IM t="2x + 2y - z + d = 0" />. On utilise le point <IM t="A(-1,-1,3) \in P" /> :</p>
+      <BM t="2(-1) + 2(-1) - 3 + d = 0 \iff -2 - 2 - 3 + d = 0 \iff -7 + d = 0 \iff d = 7" />
+      <RB>Une équation cartésienne de <IM t="P" /> est bien <IM t="2x + 2y - z + 7 = 0" /> ✓</RB>
+    </Step>
+    <Step index={3} title={<>2.a) Sphère S : Centre et Rayon</>}>
+      <p>La sphère <IM t="S" /> a pour équation :</p>
+      <BM t="x^2 + y^2 + z^2 - 6x + 2y - 4z - 11 = 0" />
+      <p>Regroupons les termes sous forme canonique :</p>
+      <BM t="(x-3)^2 - 9 + (y+1)^2 - 1 + (z-2)^2 - 4 - 11 = 0" />
+      <BM t="(x-3)^2 + (y+1)^2 + (z-2)^2 = 25" />
+      <RB>La sphère <IM t="S" /> est de centre <IM t="I(3, -1, 2)" /> et de rayon <IM t="R = \sqrt{25} = 5" /> ✓</RB>
+    </Step>
+    <Step index={4} title={<>2.b) Intersection du plan P avec la sphère S</>}>
+      <IB label="Distance du centre I au plan P">Calculons la distance de <IM t="I(3,-1,2)" /> à <IM t="P : 2x+2y-z+7=0" /> :</IB>
+      <BM t="d(I, P) = \dfrac{|2(3) + 2(-1) - (2) + 7|}{\sqrt{2^2 + 2^2 + (-1)^2}} = \dfrac{|6 - 2 - 2 + 7|}{\sqrt{9}} = \dfrac{9}{3} = 3" />
+      <p>Puisque la distance <IM t="d(I,P) = 3 < R = 5" />, le plan <IM t="P" /> coupe la sphère <IM t="S" /> suivant un cercle <IM t="(\zeta)" />.</p>
+      <IB label="Rayon du cercle">Le rayon du cercle est :</IB>
+      <BM t="r = \sqrt{R^2 - d(I,P)^2} = \sqrt{5^2 - 3^2} = \sqrt{16} = 4" />
+      <IB label="Centre H du cercle">Le centre <IM t="H" /> est le projeté orthogonal de <IM t="I" /> sur <IM t="P" />. La droite passant par <IM t="I" /> orthogonale à <IM t="P" /> a pour représentation :</IB>
+      <BM t="\begin{cases} x = 3 + 2t \\ y = -1 + 2t \\ z = 2 - t \end{cases} \quad (t \in \mathbb{R})" />
+      <p>Remplaçons dans l'équation de <IM t="P" /> :</p>
+      <BM t="2(3+2t) + 2(-1+2t) - (2-t) + 7 = 0 \iff 9t + 9 = 0 \iff t = -1" />
+      <p>En remplaçant <IM t="t = -1" /> dans la représentation de la droite, on obtient le point <IM t="H" /> :</p>
+      <BM t="x_H = 3-2 = 1, \quad y_H = -1-2 = -3, \quad z_H = 2-(-1) = 3" />
+      <RB>L'intersection est le cercle <IM t="(\zeta)" /> de centre <IM t="H(1, -3, 3)" /> et de rayon <IM t="r = 4" /> ✓</RB>
+    </Step>
+    <Step index={5} title={<>3.a) Plans perpendiculaires</>}>
+      <p>Le plan <IM t="Q" /> a pour équation <IM t="x - 2y - 2z + 11 = 0" />, de vecteur normal <IM t="\vec{n}_Q = \begin{pmatrix} 1 \\ -2 \\ -2 \end{pmatrix}" />.</p>
+      <p>Le plan <IM t="P" /> a pour vecteur normal <IM t="\vec{n}_P = \begin{pmatrix} 2 \\ 2 \\ -1 \end{pmatrix}" />. Calculons le produit scalaire :</p>
+      <BM t="\vec{n}_P \cdot \vec{n}_Q = 2(1) + 2(-2) + (-1)(-2) = 2 - 4 + 2 = 0" />
+      <RB>Les vecteurs normaux étant orthogonaux, les plans <IM t="P" /> et <IM t="Q" /> sont perpendiculaires ✓</RB>
+    </Step>
+    <Step index={6} title={<>3.b) Représentation paramétrique de la droite d'intersection Δ</>}>
+      <p>La droite <IM t="\Delta = P \cap Q" /> est définie par le système :</p>
+      <BM t="\begin{cases} 2x + 2y - z + 7 = 0 \\ x - 2y - 2z + 11 = 0 \end{cases}" />
+      <p>Vérifions que les coordonnées paramétriques proposées <IM t="x = -1 - 2\alpha" />, <IM t="y = \alpha" />, <IM t="z = 5 - 2\alpha" /> satisfont les deux équations :</p>
+      <p>Dans <IM t="P" /> : <IM t="2(-1-2\alpha) + 2(\alpha) - (5-2\alpha) + 7 = -2 - 4\alpha + 2\alpha - 5 + 2\alpha + 7 = 0" /> (Vérifié)</p>
+      <p>Dans <IM t="Q" /> : <IM t="(-1-2\alpha) - 2(\alpha) - 2(5-2\alpha) + 11 = -1 - 2\alpha - 2\alpha - 10 + 4\alpha + 11 = 0" /> (Vérifié)</p>
+      <RB>La représentation paramétrique de <IM t="\Delta" /> est correcte ✓</RB>
+    </Step>
+    <Step index={7} title={<>3.c) Distance du centre H à la droite Δ</>}>
+      <p>Prenons un point de <IM t="\Delta" /> pour <IM t="\alpha = 0" /> : <IM t="A_0(-1, 0, 5)" />, et le vecteur directeur de la droite <IM t="\vec{u}_{\Delta} = \begin{pmatrix} -2 \\ 1 \\ -2 \end{pmatrix}" /> (norme <IM t="\|\vec{u}_{\Delta}\| = \sqrt{4+1+4} = 3" />).</p>
+      <p>Calculons le vecteur <IM t="\overrightarrow{A_0H} = \begin{pmatrix} 1 - (-1) \\ -3 - 0 \\ 3 - 5 \end{pmatrix} = \begin{pmatrix} 2 \\ -3 \\ -2 \end{pmatrix}" />.</p>
+      <p>Le produit vectoriel <IM t="\overrightarrow{A_0H} \wedge \vec{u}_{\Delta}" /> vaut :</p>
+      <BM t="\overrightarrow{A_0H} \wedge \vec{u}_{\Delta} = \begin{pmatrix} 2 \\ -3 \\ -2 \end{pmatrix} \wedge \begin{pmatrix} -2 \\ 1 \\ -2 \end{pmatrix} = \begin{pmatrix} 8 \\ 8 \\ -4 \end{pmatrix}" />
+      <p>La norme de ce produit vectoriel est <IM t="\sqrt{8^2 + 8^2 + (-4)^2} = \sqrt{144} = 12" />. La distance est :</p>
+      <BM t="d(H, \Delta) = \dfrac{\|\overrightarrow{A_0H} \wedge \vec{u}_{\Delta}\|}{\|\vec{u}_{\Delta}\|} = \dfrac{12}{3} = 4" />
+      <RB>La distance de <IM t="H" /> à <IM t="\Delta" /> est égale à 4 ✓</RB>
+    </Step>
+    <Step index={8} title={<>3.d) Tangente au cercle (ζ)</>}>
+      <p>Puisque la distance de <IM t="H" /> (le centre du cercle <IM t="(\zeta)" />) à la droite <IM t="\Delta" /> est égale à son rayon <IM t="r = 4" />, la droite <IM t="\Delta" /> est tangente au cercle <IM t="(\zeta)" /> dans le plan <IM t="P" />.</p>
+      <p>Calculons le point de contact <IM t="J" />, projeté orthogonal de <IM t="H" /> sur <IM t="\Delta" />. On cherche le paramètre <IM t="\alpha" /> tel que <IM t="\overrightarrow{HJ} \cdot \vec{u}_{\Delta} = 0" /> :</p>
+      <BM t="\overrightarrow{HJ} = \begin{pmatrix} -1-2\alpha-1 \\ \alpha - (-3) \\ 5-2\alpha-3 \end{pmatrix} = \begin{pmatrix} -2-2\alpha \\ \alpha+3 \\ 2-2\alpha \end{pmatrix}" />
+      <BM t="\overrightarrow{HJ} \cdot \vec{u}_{\Delta} = -2(-2-2\alpha) + 1(\alpha+3) - 2(2-2\alpha) = 4 + 4\alpha + \alpha + 3 - 4 + 4\alpha = 9\alpha + 3 = 0 \iff \alpha = -\dfrac{1}{3}" />
+      <p>En remplaçant <IM t="\alpha = -1/3" /> dans les coordonnées de la droite, on trouve :</p>
+      <BM t="J\left(-1 - 2\left(-\frac{1}{3}\right), \; -\frac{1}{3}, \; 5 - 2\left(-\frac{1}{3}\right)\right) = J\left(-\dfrac{1}{3}, \; -\dfrac{1}{3}, \; \dfrac{17}{3}\right)" />
+      <RB>La droite <IM t="\Delta" /> est tangente à <IM t="(\zeta)" /> au point <IM t="J\left(-\frac{1}{3}, -\frac{1}{3}, \frac{17}{3}\right)" /> ✓</RB>
+    </Step>
+  </>)
+}
 
-// ── T3-E3 Probabilités ────────────────────────────────────────────────────────
-function T3E3() { return (<>
-  <Step index={0} title="Arbre de probabilités">
-    <IB label="Données"><IM t="P(S)=0{,}25,\;P(D|S)=0{,}10,\;P(D|\bar{S})=0{,}05" /></IB>
-    <IB label="Structure">Arbre à 2 niveaux : S/S̄ puis D/D̄</IB>
-  </Step>
-  <Step index={1} title="Probabilité totale P(D)">
-    <BM t={T.T3E3_PD} /><BM t={T.T3E3_PDval} />
-    <RB><IM t="P(D)=0{,}0625" /> ✓</RB>
-  </Step>
-  <Step index={2} title="Probabilité conditionnelle P(S|D)">
-    <BM t={T.T3E3_PSD} /><RB><IM t="P(S|D)=0{,}4=40\%" /></RB>
-  </Step>
-  <Step index={3} title="Au moins 1 habitant avec problème de dos (n=3)">
-    <BM t={T.T3E3_Pau3} /><BM t={T.T3E3_Pau3r} />
-    <RB><IM t="P(\text{au moins 1})\approx0{,}176" /></RB>
-  </Step>
-</>)}
+// ── T3-E3 ─────────────────────────────────────────────────────────────────────
+function T3E3() {
+  return (<>
+    <Step index={0} title="1.a) Démonstration par récurrence : u_n > 1">
+      <Rec
+        prop={<><IM t="P(n)" /> : <IM t="u_n > 1" /></>}
+        verif={<><p>Pour <IM t="n = 0" /> : <IM t="u_0 = 2 > 1" /> (Vrai) ✓</p></>}
+        suppo={<><p>Supposons que pour un entier <IM t="n" /> fixé, on a <IM t="u_n > 1" />.</p></>}
+        demo={<>
+          <p>Étudions <IM t="u_{n+1} - 1" /> :</p>
+          <BM t="u_{n+1} - 1 = \dfrac{2u_n - 1}{u_n} - 1 = \dfrac{2u_n - 1 - u_n}{u_n} = \dfrac{u_n - 1}{u_n}" />
+          <p>Par hypothèse de récurrence, <IM t="u_n > 1" />, donc le numérateur <IM t="u_n - 1 > 0" /> et le dénominateur <IM t="u_n > 0" />.</p>
+          <p>Par quotient, on obtient <IM t="u_{n+1} - 1 > 0" /> soit <IM t="u_{n+1} > 1" />. (Vérifié)</p>
+        </>}
+      />
+      <RB>Par récurrence, <IM t="u_n > 1" /> pour tout entier naturel <IM t="n" /> ✓</RB>
+    </Step>
+    <Step index={1} title={<>1.b) Différence U_{n+1} - U_n</>}>
+      <p>Calculons la différence pour tout entier naturel <IM t="n" /> :</p>
+      <BM t="u_{n+1} - u_n = \dfrac{2u_n - 1}{u_n} - u_n = \dfrac{2u_n - 1 - u_n^2}{u_n} = \dfrac{-(u_n^2 - 2u_n + 1)}{u_n} = \dfrac{-(u_n - 1)^2}{u_n}" />
+      <RB>On obtient bien <IM t="u_{n+1} - u_n = \dfrac{-(u_n - 1)^2}{u_n}" /> ✓</RB>
+    </Step>
+    <Step index={2} title={<>1.c) Monotonie, Convergence et Limite</>}>
+      <p>Puisque pour tout <IM t="n" />, <IM t="u_n > 1" />, le dénominateur <IM t="u_n" /> est strictement positif, et le numérateur <IM t="-(u_n - 1)^2" /> est négatif ou nul.</p>
+      <p>Ainsi, <IM t="u_{n+1} - u_n \leqslant 0" /> : la suite <IM t="(u_n)" /> est décroissante.</p>
+      <p>La suite étant décroissante et minorée par 1, elle est convergente vers une limite finie <IM t="\ell \geqslant 1" />.</p>
+      <p>Puisque la fonction de récurrence <IM t="f(x) = 2 - \frac{1}{x}" /> est continue sur <IM t="[1, +\infty[" />, la limite <IM t="\ell" /> vérifie l'équation du point fixe :</p>
+      <BM t="\ell = 2 - \dfrac{1}{\ell} \iff \ell^2 - 2\ell + 1 = 0 \iff (\ell - 1)^2 = 0 \iff \ell = 1" />
+      <RB>La suite <IM t="(u_n)" /> converge vers <IM t="\ell = 1" /> ✓</RB>
+    </Step>
+    <Step index={3} title={<>2.a) Suite (v_n) arithmétique</>}>
+      <p>Soit <IM t="v_n = \dfrac{1}{u_n - 1}" />. Calculons <IM t="v_{n+1}" /> :</p>
+      <BM t="v_{n+1} = \dfrac{1}{u_{n+1} - 1} = \dfrac{1}{\frac{u_n - 1}{u_n}} = \dfrac{u_n}{u_n - 1}" />
+      <p>Formons la différence <IM t="v_{n+1} - v_n" /> :</p>
+      <BM t="v_{n+1} - v_n = \dfrac{u_n}{u_n - 1} - \dfrac{1}{u_n - 1} = \dfrac{u_n - 1}{u_n - 1} = 1" />
+      <RB>La suite <IM t="(v_n)" /> est arithmétique de raison <IM t="r = 1" /> ✓</RB>
+    </Step>
+    <Step index={4} title={<>2.b-c) Expression de v_n et u_n</>}>
+      <p>Le premier terme est <IM t="v_0 = \dfrac{1}{u_0 - 1} = \dfrac{1}{2-1} = 1" />.</p>
+      <p>L'expression générale d'une suite arithmétique donne :</p>
+      <BM t="v_n = v_0 + nr = 1 + n \times 1 = n + 1" />
+      <p>Par ailleurs, <IM t="v_n = \dfrac{1}{u_n - 1} \iff u_n - 1 = \dfrac{1}{v_n} \iff u_n = 1 + \dfrac{1}{v_n}" />.</p>
+      <BM t="u_n = 1 + \dfrac{1}{n + 1} = \dfrac{n + 2}{n + 1}" />
+      <RB>On a <IM t="v_n = n + 1" /> et <IM t="u_n = \dfrac{n + 2}{n + 1}" /> ✓</RB>
+    </Step>
+    <Step index={5} title={<>3.a) Somme S_1</>}>
+      <p>La somme est définie par <IM t="S_n = \ln(u_0) + \ln(u_1) + \dots + \ln(u_n)" />.</p>
+      <BM t="S_1 = \ln(u_0) + \ln(u_1) = \ln(2) + \ln\left(\frac{3}{2}\right) = \ln\left(2 \times \frac{3}{2}\right) = \ln 3" />
+      <RB>On obtient bien <IM t="S_1 = \ln 3" /> ✓</RB>
+    </Step>
+    <Step index={6} title={<>3.b-c) Formule générale de S_n et seuil</>}>
+      <p>Exprimons la somme <IM t="S_n" /> à l'aide de la forme de <IM t="u_k" /> :</p>
+      <BM t="S_n = \sum_{k=0}^n \ln(u_k) = \sum_{k=0}^n \ln\left(\dfrac{k+2}{k+1}\right) = \sum_{k=0}^n \left(\ln(k+2) - \ln(k+1)\right)" />
+      <p>Par télescopage, tous les termes intermédiaires se simplifient :</p>
+      <BM t="S_n = \ln(n+2) - \ln(1) = \ln(n+2)" />
+      <p>Cherchons le plus petit entier naturel <IM t="n" /> tel que <IM t="S_n > 10" /> :</p>
+      <BM t="\ln(n+2) > 10 \iff n+2 > e^{10} \iff n > e^{10} - 2" />
+      <p>Puisque <IM t="e^{10} \approx 22026{,}46" />, on a <IM t="n > 22024{,}46" />.</p>
+      <RB>Le plus petit entier naturel requis est <IM t="n = 22025" /> ✓</RB>
+    </Step>
+  </>)
+}
 
 // ── T3-E4 ─────────────────────────────────────────────────────────────────────
-function T3E4() { 
-  const f34 = x => Math.log(x) / x
+function T3E4() {
+  const f3 = x => x + 1 - x * Math.exp(1 - x * x);
   return (<>
-  <Step index={0} title="Limites et Asymptotes">
-    <BM t={T.T3E4_f} />
-    <IB label="En 0⁺"><BM t={T.T3E4_lim0} /></IB>
-    <IB label="En +∞"><BM t={T.T3E4_liminf} /></IB>
-  </Step>
-  <Step index={1} title="Dérivée et Variations">
-    <IB label="Dérivée"><BM t={T.T3E4_fp} /></IB>
-    <IB label="Signe"><BM t={T.T3E4_signe} /></IB>
-    <div className="section-label">Tableau de variation</div>
-    <VariationTable
-      xVals={[{ tex: '0' }, { tex: 'e' }, { tex: '+\\infty' }]}
-      signs={['+', '-']}
-      arrows={['up', 'down']}
-      fVals={[{ tex: '-\\infty', pos: 'bot' }, { tex: '1/e', pos: 'top' }, { tex: '0', pos: 'bot' }]}
-    />
-  </Step>
-  <Step index={2} title="Racine et Signe">
-    <IB label="Racine de f"><BM t={T.T3E4_zero} /></IB>
-    <RB>f(x) &lt; 0 sur ]0;1[ et f(x) &gt; 0 sur ]1;+∞[ ✓</RB>
-  </Step>
-  <Step index={3} title="Courbe (C)">
-    <div className="section-label">Tracé de f(x)</div>
-    <FunctionCurve
-      fn={f34}
-      xmin={0.1} xmax={6} ymin={-1} ymax={0.5}
-      xticks={[1,2,3,4,5]} yticks={[-1,-0.5,0,0.5]}
-      title="(C): f(x) = ln(x) / x"
-      extra={[
-        { type:'hline', y:0, color:'#94a3b8' },
-        { type:'vline', x:0, color:'#94a3b8' },
-        { type:'point', x:1, y:0, color:'#e0296e' },
-        { type:'point', x:Math.E, y:1/Math.E, color:'#e0296e' }
-      ]}
-    />
-  </Step>
-  <Step index={4} title="Primitive et Aire">
-    <IB label="Primitive g(x)"><BM t={T.T3E4_g} /></IB>
-    <IB label="Intégrale"><BM t={T.T3E4_I} /></IB>
-    <RB>L'aire (f(x) &gt; 0 sur [1;e]) est : <BM t={T.T3E4_S} /></RB>
-  </Step>
-</>)}
+    <Step index={0} title={<>Partie I - 1) Croissance de la fonction auxiliaire g</>}>
+      <p>Soit <IM t="g(x) = e^{x^2-1} + 2x^2 - 1" /> sur <IM t="[0, +\infty[" />.</p>
+      <p>Sa dérivée est :</p>
+      <BM t="g'(x) = 2x e^{x^2-1} + 4x = 2x(e^{x^2-1} + 2)" />
+      <p>Pour tout <IM t="x > 0" />, <IM t="2x > 0" /> et <IM t="e^{x^2-1} + 2 > 0" />, donc <IM t="g'(x) > 0" />. Pour <IM t="x = 0" />, <IM t="g'(0) = 0" />.</p>
+      <RB>La fonction <IM t="g" /> est strictement croissante sur <IM t="[0, +\infty[" /> ✓</RB>
+    </Step>
+    <Step index={1} title={<>Partie I - 2-3) Racine unique alpha et Signe de g</>}>
+      <p>La fonction <IM t="g" /> est continue et strictement croissante sur <IM t="[0, +\infty[" />.</p>
+      <BM t="g(0) = e^{-1} - 1 = \dfrac{1-e}{e} < 0 \quad \text{et} \quad \lim_{x\to+\infty} g(x) = +\infty" />
+      <p>D'après le théorème des valeurs intermédiaires, l'équation <IM t="g(x) = 0" /> admet une unique solution <IM t="\alpha" /> dans <IM t="[0, +\infty[" />.</p>
+      <IB label="Calculs de valeurs">On a :</IB>
+      <BM t="g(0{,}51) \approx -0{,}0025 < 0 \quad \text{et} \quad g(0{,}52) \approx 0{,}0228 > 0" />
+      <p>Donc <IM t="0{,}51 < \alpha < 0{,}52" />.</p>
+      <RB>Signe : <IM t="g(x) < 0" /> sur <IM t="[0, \alpha[" />, <IM t="g(\alpha) = 0" />, et <IM t="g(x) > 0" /> sur <IM t="]\alpha, +\infty[" /> ✓</RB>
+    </Step>
+    <Step index={2} title={<>Partie II - 4) Centre de symétrie J(0, 1)</>}>
+      <p>Soit <IM t="f(x) = x + 1 - x e^{1-x^2}" />.</p>
+      <BM t="f(-x) = -x + 1 - (-x) e^{1-(-x)^2} = -x + 1 + x e^{1-x^2}" />
+      <p>Calculons la somme :</p>
+      <BM t="f(-x) + f(x) = (-x + 1 + x e^{1-x^2}) + (x + 1 - x e^{1-x^2}) = 2" />
+      <p>La relation <IM t="f(-x) + f(x) = 2 \times 1" /> prouve géométriquement que :</p>
+      <RB>Le point <IM t="J(0, 1)" /> est le centre de symétrie de la courbe <IM t="(\mathcal{C}_f)" /> ✓</RB>
+    </Step>
+    <Step index={3} title={<>Partie II - 5) Limite, Asymptote oblique et Position relative</>}>
+      <IB label="Limite en +∞">Par croissances comparées, <IM t="\lim_{x\to+\infty} x e^{1-x^2} = \lim_{x\to+\infty} e \dfrac{x}{e^{x^2}} = 0" />, donc :</IB>
+      <BM t="\lim_{x\to+\infty} f(x) = +\infty" />
+      <IB label="Asymptote oblique">Considérons <IM t="f(x) - (x + 1) = -x e^{1-x^2}" />. On a :</IB>
+      <BM t="\lim_{x\to+\infty} [f(x) - (x + 1)] = 0" />
+      <p>Ainsi, la droite <IM t="(D) : y = x + 1" /> est asymptote oblique à la courbe en <IM t="+\infty" />.</p>
+      <IB label="Position relative sur [0, +∞[">On étudie le signe de la différence <IM t="f(x) - (x + 1) = -x e^{1-x^2}" /> :</IB>
+      <p>Pour <IM t="x > 0" />, la différence est strictement négative, la courbe est donc en dessous de <IM t="(D)" />.</p>
+      <RB>La courbe <IM t="(\mathcal{C}_f)" /> coupe <IM t="(D)" /> en <IM t="J(0, 1)" /> et reste en dessous sur <IM t="]0, +\infty[" /> ✓</RB>
+    </Step>
+    <Step index={4} title={<>Partie II - 6) Dérivée et Variations</>}>
+      <p>Dérivons la fonction sur <IM t="[0, +\infty[" /> :</p>
+      <BM t="f'(x) = 1 - \left( 1 \cdot e^{1-x^2} + x \cdot (-2x) e^{1-x^2} \right) = 1 + (2x^2 - 1)e^{1-x^2}" />
+      <p>Par ailleurs, calculons le produit :</p>
+      <BM t="e^{1-x^2} g(x) = e^{1-x^2} \left( e^{x^2-1} + 2x^2 - 1 \right) = e^0 + (2x^2 - 1)e^{1-x^2} = 1 + (2x^2 - 1)e^{1-x^2} = f'(x)" />
+      <p>Puisque <IM t="e^{1-x^2} > 0" />, le signe de <IM t="f'(x)" /> is celui de la fonction auxiliaire <IM t="g(x)" /> :</p>
+      <div className="section-label">Tableau de variations sur [0, +∞[</div>
+      <VariationTable
+        xVals={[{ tex: '0' }, { tex: '\\alpha' }, { tex: '+\\infty' }]}
+        signs={['-', '+']}
+        arrows={['down', 'up']}
+        fVals={[{ tex: '1', pos: 'top' }, { tex: 'f(\\alpha)', pos: 'bot' }, { tex: '+\\infty', pos: 'top' }]}
+      />
+      <RB>Par symétrie centrale par rapport à <IM t="J" />, la fonction est décroissante sur <IM t="[-\alpha, \alpha]" /> et croissante sur <IM t="]-\infty, -\alpha]" /> et sur <IM t="[\alpha, +\infty[" /> ✓</RB>
+    </Step>
+    <Step index={5} title={<>Partie II - 7) Tangente et Tracé de la courbe</>}>
+      <p>L'équation de la tangente <IM t="(T)" /> en <IM t="J(0, 1)" /> est donnée par <IM t="y = f'(0)x + f(0)" />.</p>
+      <BM t="f'(0) = 1 + (0 - 1)e^1 = 1 - e \approx -1{,}72" />
+      <p>Ainsi, la tangente a pour équation :</p>
+      <BM t="(T) : y = (1-e)x + 1" />
+      <div className="section-label">Tracé de f(x)</div>
+      <FunctionCurve
+        fn={f3}
+        xmin={-2.5} xmax={2.5} ymin={-2} ymax={4.5}
+        xticks={[-2, -1, 0, 1, 2]} yticks={[-1, 0, 1, 2, 3, 4]}
+        title="Courbe (Cf) et Asymptote (D)"
+        extra={[
+          { type: 'fn', fn: x => x + 1, color: '#e0296e' },
+          { type: 'fn', fn: x => (1 - Math.E) * x + 1, color: '#f59e0b' },
+          { type: 'point', x: 0, y: 1, color: '#7c3aed' }
+        ]}
+      />
+    </Step>
+    <Step index={6} title={<>Partie III - 8-10) Intégrale, Calcul d'Aire et Limite</>}>
+      <IB label="Calcul de l'intégrale I(a)">On pose le changement de variable <IM t="u = 1 - x^2 \implies du = -2x dx" /> :</IB>
+      <BM t="I(a) = \int_0^a x e^{1-x^2} dx = \left[ -\dfrac{1}{2} e^{1-x^2} \right]_0^a = \dfrac{1}{2}\left( e - e^{1-a^2} \right)" />
+      <IB label="Aire A(a)">Puisque la courbe <IM t="(\mathcal{C}_f)" /> est en dessous de <IM t="(D)" /> sur <IM t="[0, a]" />, l'aire est :</IB>
+      <BM t="\mathcal{A}(a) = \int_0^a [ (x+1) - f(x) ] dx = \int_0^a x e^{1-x^2} dx = I(a) = \dfrac{1}{2}\left( e - e^{1-a^2} \right) \text{ u.a.}" />
+      <IB label="Limite quand a → +∞">On a <IM t="\lim_{a\to+\infty} e^{1-a^2} = 0" />, donc :</IB>
+      <BM t="\lim_{a\to+\infty} \mathcal{A}(a) = \dfrac{e}{2} \text{ u.a.}" />
+      <RB>Aire limite : <IM t="\dfrac{e}{2} \approx 1{,}36" /> unités d'aire ✓</RB>
+    </Step>
+  </>)
+}
 
 // ── T4-E1 ─────────────────────────────────────────────────────────────────────
 function T4E1() { return (<>
@@ -682,8 +1111,8 @@ function T6E1() { return (<>
 function T6E2() { return (<>
   <Step index={0} title={<>Vérification et Récurrence sur <IM t="U_n" /></>}>
     <IB label="Vérification algébrique"><BM t={T.T6E2_U1} /></IB>
-    <IB label="Initialisation (n=0)"><BM t={T.T6E2_Init} /></IB>
-    <IB label="Hérédité"><BM t={T.T6E2_Hered} /></IB>
+    <IB label="Vérification (n=0)"><BM t={T.T6E2_Init} /></IB>
+    <IB label="Démonstration"><BM t={T.T6E2_Hered} /></IB>
   </Step>
   <Step index={1} title="Décroissance et Convergence">
     <IB label="Différence"><BM t={T.T6E2_Decr} /></IB>
@@ -1205,6 +1634,63 @@ function T10E4() { return (<>
   </Step>
 </>)}
 
+// ── SUJET 11 ──────────────────────────────────────────────────────────────────
+function T11E1() { return (<>
+  <Step index={0} title="Équations dans C">
+    <IB label="Vérification"><BM t={T.T11E1_a} /></IB>
+    <RB><BM t={T.T11E1_b} /></RB>
+    <RB><BM t={T.T11E1_sol} /></RB>
+  </Step>
+</>)}
+function T11E2() { return (<>
+  <Step index={0} title="Plans et Sphères">
+    <IB label="Vecteur Normal"><BM t={T.T11E2_n} /></IB>
+    <RB><BM t={T.T11E2_P} /></RB>
+    <IB label="Sphère S"><BM t={T.T11E2_S} /></IB>
+  </Step>
+</>)}
+function T11E3() { return (<>
+  <Step index={0} title="Calcul Intégral">
+    <RB><BM t={T.T11E3_I} /></RB>
+    <RB><BM t={T.T11E3_J} /></RB>
+  </Step>
+</>)}
+function T11E4() { return (<>
+  <Step index={0} title="Étude de fonction">
+    <IB label="Signe de g"><BM t={T.T11E4_g} /></IB>
+    <RB><BM t={T.T11E4_fp} /></RB>
+    <IB label="Tangente T"><BM t={T.T11E4_T} /></IB>
+    <RB><BM t={T.T11E4_Un} /></RB>
+  </Step>
+</>)}
+
+// ── SUJET 12 ──────────────────────────────────────────────────────────────────
+function T12E1() { return (<>
+  <Step index={0} title="Complexes — Équations">
+    <RB><BM t={T.T12E1_det} /></RB>
+    <RB><BM t={T.T12E1_sol} /></RB>
+  </Step>
+</>)}
+function T12E2() { return (<>
+  <Step index={0} title="Géométrie dans l'Espace">
+    <IB label="Plan P"><BM t={T.T12E2_P} /></IB>
+    <IB label="Sphère S"><BM t={T.T12E2_S} /></IB>
+  </Step>
+</>)}
+function T12E3() { return (<>
+  <Step index={0} title="Statistiques">
+    <IB label="Corrélation"><BM t={T.T12E3_r} /></IB>
+    <RB><BM t={T.T12E3_D} /></RB>
+  </Step>
+</>)}
+function T12E4() { return (<>
+  <Step index={0} title="Analyse — Problème">
+    <IB label="Lien f-g"><BM t={T.T12E4_fp} /></IB>
+    <RB><BM t={T.T12E4_asymp} /></RB>
+    <RB><BM t={T.T12E4_Int} /></RB>
+  </Step>
+</>)}
+
 // ── TEST 1 ────────────────────────────────────────────────────────────────────
 function TEST1E1() { return (<>
   <Step index={0} title="Fonctions Exponentielles — QCM"><IB label="Réponses correctes">
@@ -1340,21 +1826,109 @@ function TEST5E3() { return (<>
   </IB><RB><BM t={"4)\\;\\text{1ère colonne de }A^{-1}=\\begin{pmatrix}1\\\\0\\\\0\\end{pmatrix}"} /></RB></Step>
 </>)}
 function TEST5E4() { return (<>
-  <Step index={0} title="Graphes — Dijkstra — QCM"><IB label="Réponses correctes">
-    <BM t={"1)\\;X=8(B),\\,Y=9(C)\\quad 2)\\;d(A,F)=11\\quad 3)\\;\\text{Diamètre}=4"} />
-  </IB><RB><BM t={"4)\\;\\text{Non}"} /></RB></Step>
-</>)}
-function TEST5E5() { return (<>
-  <Step index={0} title="Logarithmes et Inéquations — QCM"><IB label="Réponses correctes">
-    <BM t={"1)\\;D_f=]0,+\\infty[\\quad 2)\\;X=1\\text{ et }X=2\\quad 3)\\;x=e\\text{ et }x=e^2"} />
-  </IB><RB><BM t={"4)\\;\\ln(x)>1\\iff x\\in]e,+\\infty["} /></RB></Step>
+  <Step index={0} title="Graphes — QCM"><IB label="Réponses correctes">
+    <BM t={"1)\\;c\\quad 2)\\;a\\quad 3)\\;b"} />
+  </IB><RB><BM t={"4)\\;c"} /></RB></Step>
 </>)}
 
+function QCM_Corr({ subject, data }) {
+  return (
+    <div className="qcm-corr-grid">
+      {data.map((res, i) => (
+        <div key={i} className="qcm-corr-item">
+          <span className="qcm-q-num">Question {i + 1}</span>
+          <span className="qcm-q-ans"><IM t={res} /></span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function Q1_Corr({ exo }) {
+  const data = [
+    ['e^{-i\\pi/3}', '6', '2\\pm i', '\\text{Médiatrice}', '3\\pi/4'],
+    ['0', '\\text{Convergente}', '6', '\\text{Divergente}', '1/2'],
+    [']2, +\\infty[', '2x/(x^2+1)', '0', '2\\ln 2', '(Ox)'],
+    ['\\vec{n}(2,-1,3)', '1', '\\text{Colinéaires}', '\\text{Perpendiculaires}', '\\text{Vrai}']
+  ]
+  return <QCM_Corr subject={1} data={data[exo - 1]} />
+}
+
+function Q2_Corr({ exo }) {
+  const data = [
+    ['1', '5', '12', 'x \\equiv 2', '0'],
+    ['0{,}12', '2', '0{,}5', 'P(A \\cap B)', '1'],
+    ['(\\bar{x}, \\bar{y})', '\\text{Excellent}', 'G', '\\text{Positif}', '[-1, 1]'],
+    ['0', '3e^{3x}', '0', 'e^a \\cdot e^b', '\\text{Décroissante}']
+  ]
+  return <QCM_Corr subject={2} data={data[exo - 1]} />
+}
+
+function Q3_Corr({ exo }) {
+  const data = [
+    ['\\ln x', '0{,}5', '\\int_a^b f', '\\frac{1}{b-a}\\int f', '0'],
+    ['1', '5', '\\pi/2', '1-2i', '\\text{Réel}'],
+    ['\\text{Croissante}', 'n(n+1)/2', '0', '\\text{Faux}', '29'],
+    ['\\text{Asympt. Vert.}', '\\text{Croissante}', '\\text{Signe change}', '(Oy)', '2']
+  ]
+  return <QCM_Corr subject={3} data={data[exo - 1]} />
+}
+
+function Q4_Corr({ exo }) {
+  const data = [
+    ['0', '2', '0', '\\frac{z_A+z_B+z_C}{3}', '\\text{Cercle}'],
+    ['2', '1 \\text{ ou } p-1', 'x \\equiv 2', '1', '\\text{Vrai}'],
+    ['44', '0{,}2', 'np', '4V(X)', '1'],
+    ['1', '0', '\\frac{x}{1+x}-\\ln(1+x)', 'x^x(1+\\ln x)', '\\text{Tangente}']
+  ]
+  return <QCM_Corr subject={4} data={data[exo - 1]} />
+}
+
+function Q5_Corr({ exo }) {
+  const data = [
+    ['\\frac{1}{2}(3I-A)', '8\\det(A)', '\\text{Unique}', '\\text{Rotation}', 'n'],
+    ['1{,}6', '1{,}4', '1{,}6', '\\text{Satisfaisant}', '\\text{Nulle}'],
+    ['0{,}5', '\\ln(\\ln x)', '0', '\\sqrt{2} \\text{ et } -\\sqrt{2}', '\\ln 2'],
+    ['\\text{Cercle privé}', '\\text{Axe } (Ox)', 'e^{i\\alpha}', '\\text{Axe } (Ox)', 'z\'=iz']
+  ]
+  return <QCM_Corr subject={5} data={data[exo - 1]} />
+}
+
+function Q6_Corr({ exo }) {
+  const data = [
+    ['\\sqrt{2}', '\\text{Perpendiculaires}', '\\text{Sécantes}', '(1, 2, 2)', '\\pi/2'],
+    ['\\frac{e^\\pi+1}{2}', '0', '0{,}5', '1-\\ln(\\frac{1+e}{2})', '1'],
+    ['\\text{Croissante}', '\\ell^2-\\ell-2=0', '2', '\\text{Ni l\'un ni l\'autre}', 'a+b'],
+    ['0{,}6', '1/3', '0{,}1', '1/10', '1']
+  ]
+  return <QCM_Corr subject={6} data={data[exo - 1]} />
+}
+
+function Q7_Corr({ exo }) {
+  const data = [
+    ['\\frac{z-i}{z+1} \\in \\mathbb{R}', '\\text{Cercle de diamètre } [AB]', '6k+3', '\\text{Un cercle}', 'y=-x'],
+    ['0{,}12', '\\binom{10}{2}(0{,}05)^2(0{,}95)^8', '\\text{Bayes}', '0{,}7', 'P(A)+P(B)-P(A)P(B)'],
+    ['0', '1', '\\ln 2', '2', '\\text{Un point d\'inflexion}'],
+    ['\\frac{1}{3}|u_n-\\ell|', '\\text{La distance } |u_n-\\ell| \\to 0', '\\text{Géométrique}', '\\text{Dérivable}', '\\text{Faux}']
+  ]
+  return <QCM_Corr subject={7} data={data[exo - 1]} />
+}
+
+function Q8_Corr({ exo }) {
+  const data = [
+    ['1/8', '0{,}5', '6', 'e^{-1}', '0'],
+    ['2|\\cos(\\theta/2)|', '0', '\\frac{z_C-z_A}{z_B-z_A} \\in \\mathbb{R}', '-2z', '-\\text{arg}(z)'],
+    ['+\\infty', '\\ln x', ']-\\infty, 0]', '2', 'y=x'],
+    ['\\text{Positif}', '\\text{Décroissante}', '0', '(n+1)I_n - 1/e', '1-1/e']
+  ]
+  return <QCM_Corr subject={8} data={data[exo - 1]} />
+}
+
 const DB = {
-  'T1-E1': { title:'Matrices et Systèmes',    badge:'Sujet 1 · Ex.1 · Algèbre',       C:<T1E1/> },
-  'T1-E2': { title:'Suites Numériques',        badge:'Sujet 1 · Ex.2 · Analyse',       C:<T1E2/> },
-  'T1-E3': { title:'Statistiques',             badge:'Sujet 1 · Ex.3 · Stats',         C:<T1E3/> },
-  'T1-E4': { title:'Étude de Fonction — Ln',   badge:'Sujet 1 · Ex.4 · Analyse',       C:<T1E4/> },
+  'T1-E1': { title:'Nombres Complexes', badge:'Sujet 1 · Ex.1', C:<T1E1/> },
+  'T1-E2': { title:'Géométrie dans l\'Espace', badge:'Sujet 1 · Ex.2', C:<T1E2/> },
+  'T1-E3': { title:'Suites Numériques', badge:'Sujet 1 · Ex.3', C:<T1E3/> },
+  'T1-E4': { title:'Analyse', badge:'Sujet 1 · Ex.4', C:<T1E4/> },
   'T2-E1': { title:'Matrices et Applications', badge:'Sujet 2 · Ex.1 · Algèbre',       C:<T2E1/> },
   'T2-E2': { title:'Suites Numériques',        badge:'Sujet 2 · Ex.2 · Analyse',       C:<T2E2/> },
   'T2-E3': { title:'Statistiques',             badge:'Sujet 2 · Ex.3 · Stats',         C:<T2E3/> },
@@ -1398,6 +1972,17 @@ const DB = {
   'T10-E3': { title:'Analyse — Fonctions', badge:'Sujet 10 · Ex.3', C:<T10E3/> },
   'T10-E4': { title:'Théorie des Graphes — Non orienté', badge:'Sujet 10 · Ex.4', C:<T10E4/> },
 
+  // Sujet 11 et 12
+  'T11-E1': { title:'Nombres Complexes', badge:'Sujet 11 · Ex.1', C:<T11E1/> },
+  'T11-E2': { title:'Géométrie dans l\'Espace', badge:'Sujet 11 · Ex.2', C:<T11E2/> },
+  'T11-E3': { title:'Calcul Intégral', badge:'Sujet 11 · Ex.3', C:<T11E3/> },
+  'T11-E4': { title:'Analyse — Problème', badge:'Sujet 11 · Ex.4', C:<T11E4/> },
+
+  'T12-E1': { title:'Nombres Complexes', badge:'Sujet 12 · Ex.1', C:<T12E1/> },
+  'T12-E2': { title:'Géométrie dans l\'Espace', badge:'Sujet 12 · Ex.2', C:<T12E2/> },
+  'T12-E3': { title:'Statistiques', badge:'Sujet 12 · Ex.3', C:<T12E3/> },
+  'T12-E4': { title:'Analyse — Problème', badge:'Sujet 12 · Ex.4', C:<T12E4/> },
+
   // Tests 1 à 5
   'TEST1-E1': { title:'Fonctions Exponentielles', badge:'Test 1 · Ex.1', C:<TEST1E1/> },
   'TEST1-E2': { title:'Théorie des Graphes et Matrices', badge:'Test 1 · Ex.2', C:<TEST1E2/> },
@@ -1411,23 +1996,45 @@ const DB = {
   'TEST2-E4': { title:'Suites numériques', badge:'Test 2 · Ex.4', C:<TEST2E4/> },
   'TEST2-E5': { title:'Graphes Probabilistes', badge:'Test 2 · Ex.5', C:<TEST2E5/> },
 
-  'TEST3-E1': { title:'Évaluation QCM - Ex.1', badge:'Test 3 · Ex.1', C:<TEST3E1/> },
-  'TEST3-E2': { title:'Évaluation QCM - Ex.2', badge:'Test 3 · Ex.2', C:<TEST3E2/> },
-  'TEST3-E3': { title:'Évaluation QCM - Ex.3', badge:'Test 3 · Ex.3', C:<TEST3E3/> },
-  'TEST3-E4': { title:'Évaluation QCM - Ex.4', badge:'Test 3 · Ex.4', C:<TEST3E4/> },
-  'TEST3-E5': { title:'Évaluation QCM - Ex.5', badge:'Test 3 · Ex.5', C:<TEST3E5/> },
+  'Q1-E1': { title:'Nombres Complexes', badge:'Sujet QCM 1 · Ex.1', C:<Q1_Corr exo={1}/> },
+  'Q1-E2': { title:'Suites Réelles', badge:'Sujet QCM 1 · Ex.2', C:<Q1_Corr exo={2}/> },
+  'Q1-E3': { title:'Analyse (Logarithmes)', badge:'Sujet QCM 1 · Ex.3', C:<Q1_Corr exo={3}/> },
+  'Q1-E4': { title:'Géométrie dans l\'Espace', badge:'Sujet QCM 1 · Ex.4', C:<Q1_Corr exo={4}/> },
 
-  'TEST4-E1': { title:'Évaluation QCM - Ex.1', badge:'Test 4 · Ex.1', C:<TEST4E1/> },
-  'TEST4-E2': { title:'Évaluation QCM - Ex.2', badge:'Test 4 · Ex.2', C:<TEST4E2/> },
-  'TEST4-E3': { title:'Évaluation QCM - Ex.3', badge:'Test 4 · Ex.3', C:<TEST4E3/> },
-  'TEST4-E4': { title:'Évaluation QCM - Ex.4', badge:'Test 4 · Ex.4', C:<TEST4E4/> },
-  'TEST4-E5': { title:'Évaluation QCM - Ex.5', badge:'Test 4 · Ex.5', C:<TEST4E5/> },
+  'Q2-E1': { title:'Arithmétique', badge:'Sujet QCM 2 · Ex.1', C:<Q2_Corr exo={1}/> },
+  'Q2-E2': { title:'Probabilités', badge:'Sujet QCM 2 · Ex.2', C:<Q2_Corr exo={2}/> },
+  'Q2-E3': { title:'Statistiques', badge:'Sujet QCM 2 · Ex.3', C:<Q2_Corr exo={3}/> },
+  'Q2-E4': { title:'Analyse (Exponentielles)', badge:'Sujet QCM 2 · Ex.4', C:<Q2_Corr exo={4}/> },
 
-  'TEST5-E1': { title:'Évaluation QCM - Ex.1', badge:'Test 5 · Ex.1', C:<TEST5E1/> },
-  'TEST5-E2': { title:'Évaluation QCM - Ex.2', badge:'Test 5 · Ex.2', C:<TEST5E2/> },
-  'TEST5-E3': { title:'Évaluation QCM - Ex.3', badge:'Test 5 · Ex.3', C:<TEST5E3/> },
-  'TEST5-E4': { title:'Évaluation QCM - Ex.4', badge:'Test 5 · Ex.4', C:<TEST5E4/> },
-  'TEST5-E5': { title:'Évaluation QCM - Ex.5', badge:'Test 5 · Ex.5', C:<TEST5E5/> }
+  'Q3-E1': { title:'Calcul Intégral', badge:'Sujet QCM 3 · Ex.1', C:<Q3_Corr exo={1}/> },
+  'Q3-E2': { title:'Nombres Complexes', badge:'Sujet QCM 3 · Ex.2', C:<Q3_Corr exo={2}/> },
+  'Q3-E3': { title:'Suites Réelles', badge:'Sujet QCM 3 · Ex.3', C:<Q3_Corr exo={3}/> },
+  'Q3-E4': { title:'Analyse Graphique', badge:'Sujet QCM 3 · Ex.4', C:<Q3_Corr exo={4}/> },
+
+  'Q4-E1': { title:'Nombres Complexes', badge:'Sujet QCM 4 · Ex.1', C:<Q4_Corr exo={1}/> },
+  'Q4-E2': { title:'Arithmétique', badge:'Sujet QCM 4 · Ex.2', C:<Q4_Corr exo={2}/> },
+  'Q4-E3': { title:'Probabilités', badge:'Sujet QCM 4 · Ex.3', C:<Q4_Corr exo={3}/> },
+  'Q4-E4': { title:'Analyse (Limites)', badge:'Sujet QCM 4 · Ex.4', C:<Q4_Corr exo={4}/> },
+
+  'Q5-E1': { title:'Matrices', badge:'Sujet QCM 5 · Ex.1', C:<Q5_Corr exo={1}/> },
+  'Q5-E2': { title:'Statistiques', badge:'Sujet QCM 5 · Ex.2', C:<Q5_Corr exo={2}/> },
+  'Q5-E3': { title:'Analyse (Log/Int)', badge:'Sujet QCM 5 · Ex.3', C:<Q5_Corr exo={3}/> },
+  'Q5-E4': { title:'Complexes (Géométrie)', badge:'Sujet QCM 5 · Ex.4', C:<Q5_Corr exo={4}/> },
+
+  'Q6-E1': { title:'Géométrie dans l\'Espace', badge:'Sujet QCM 6 · Ex.1', C:<Q6_Corr exo={1}/> },
+  'Q6-E2': { title:'Calcul Intégral', badge:'Sujet QCM 6 · Ex.2', C:<Q6_Corr exo={2}/> },
+  'Q6-E3': { title:'Suites et Limites', badge:'Sujet QCM 6 · Ex.3', C:<Q6_Corr exo={3}/> },
+  'Q6-E4': { title:'Probabilités (Bayes)', badge:'Sujet QCM 6 · Ex.4', C:<Q6_Corr exo={4}/> },
+
+  'Q7-E1': { title:'Géométrie Complexe', badge:'Sujet QCM 7 · Ex.1', C:<Q7_Corr exo={1}/> },
+  'Q7-E2': { title:'Bayes et Binomiale', badge:'Sujet QCM 7 · Ex.2', C:<Q7_Corr exo={2}/> },
+  'Q7-E3': { title:'Analyse Graphique', badge:'Sujet QCM 7 · Ex.3', C:<Q7_Corr exo={3}/> },
+  'Q7-E4': { title:'Suites et TAF', badge:'Sujet QCM 7 · Ex.4', C:<Q7_Corr exo={4}/> },
+
+  'Q8-E1': { title:'Lois Continues', badge:'Sujet QCM 8 · Ex.1', C:<Q8_Corr exo={1}/> },
+  'Q8-E2': { title:'Complexes Avancés', badge:'Sujet QCM 8 · Ex.2', C:<Q8_Corr exo={2}/> },
+  'Q8-E3': { title:'Analyse (Exp/Ln)', badge:'Sujet QCM 8 · Ex.3', C:<Q8_Corr exo={3}/> },
+  'Q8-E4': { title:'Suites et Intégrales', badge:'Sujet QCM 8 · Ex.4', C:<Q8_Corr exo={4}/> }
 }
 
 export default function App() {
@@ -1448,9 +2055,10 @@ export default function App() {
   const simplePdfName = (id) => id.split('-')[0]
   // Belfallagui: on utilise toujours le fichier complet regroupé par sujet
   const belPdfName = (id) => `belfallagui_corrige_${id.split('-')[0]}_complet`
-  // Corrigé Révision Premium BAC: corrige_revision_1.pdf à corrige_revision_5.pdf
+  // Corrigé Révision Premium BAC: corrige_revision_1.pdf, corrige_revision_2.pdf, ...
   const revNum = (id) => { const m = id.match(/^T(\d+)/); return m ? parseInt(m[1]) : null }
-  const hasRevPdf = (id) => { const n = revNum(id); return n && n >= 1 && n <= 5 }
+  const REV_PDF_COUNT = 4  // Nombre de PDFs disponibles (mettre à jour quand de nouveaux corrigés sont ajoutés)
+  const hasRevPdf = (id) => { const n = revNum(id); return n && n >= 1 && n <= REV_PDF_COUNT }
   const revPdfName = (id) => `corrige_revision_${revNum(id)}`
 
   return (
@@ -1479,23 +2087,6 @@ export default function App() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <span className="exo-badge">{correction.badge}</span>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                  <a 
-                    href={`${import.meta.env.BASE_URL}assets/${belPdfName(exoId)}.pdf`} 
-                    download 
-                    className="download-pdf-btn"
-                    style={{ background: 'linear-gradient(135deg, #F51E65, #c9104b)', borderColor: '#F51E65' }}
-                    title="Télécharger la version Belfallagui (corrigé détaillé bilingue complet)"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                      <polyline points="14 2 14 8 20 8"></polyline>
-                      <line x1="16" y1="13" x2="8" y2="13"></line>
-                      <line x1="16" y1="17" x2="8" y2="17"></line>
-                      <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                    <span>Version Belfallagui</span>
-                  </a>
-
                   {hasRevPdf(exoId) && (
                     <a
                       href={`${import.meta.env.BASE_URL}assets/${revPdfName(exoId)}.pdf`}
