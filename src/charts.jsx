@@ -200,3 +200,91 @@ function FO({ x, y, w, h, c = '#1d3a6e', children }) {
     </foreignObject>
   )
 }
+
+// ─── Probability Tree ─────────────────────────────────────────────────────────
+export function ProbabilityTree() {
+  const w = 400, h = 240;
+  
+  const badgeStyle = {
+    backgroundColor: '#ffffff',
+    borderRadius: '4px',
+    padding: '2px 6px',
+    border: '1px solid #cbd5e1',
+    color: '#e0296e',
+    fontSize: '0.78rem',
+    fontWeight: '700',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  };
+
+  return (
+    <div className="graph-wrap">
+      <div className="graph-title" style={{ fontSize: '0.95rem', fontWeight: '700', color: '#1d3a6e', marginBottom: '0.5rem', textAlign: 'center' }}>
+        Arbre pondéré de la situation
+      </div>
+      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', maxWidth: w, display: 'block', margin: '0 auto' }}>
+        {/* Connection lines from Root to Level 1 */}
+        <line x1={40} y1={120} x2={180} y2={60} stroke="#1d3a6e" strokeWidth={2.5} />
+        <line x1={40} y1={120} x2={180} y2={180} stroke="#1d3a6e" strokeWidth={2.5} />
+
+        {/* Connection lines from Level 1 to Level 2 */}
+        <line x1={180} y1={60} x2={320} y2={30} stroke="#475569" strokeWidth={2} />
+        <line x1={180} y1={60} x2={320} y2={90} stroke="#475569" strokeWidth={2} />
+        <line x1={180} y1={180} x2={320} y2={150} stroke="#475569" strokeWidth={2} />
+        <line x1={180} y1={180} x2={320} y2={210} stroke="#475569" strokeWidth={2} />
+
+        {/* Root dot */}
+        <circle cx={40} cy={120} r={6} fill="#64748b" stroke="#ffffff" strokeWidth={1.5} />
+
+        {/* Level 1 Node circles */}
+        <circle cx={180} cy={60} r={18} fill="#e8f0ff" stroke="#1d3a6e" strokeWidth={2.5} />
+        <circle cx={180} cy={180} r={18} fill="#e8f0ff" stroke="#1d3a6e" strokeWidth={2.5} />
+
+        {/* Level 2 Node circles */}
+        <circle cx={320} cy={30} r={18} fill="#f8fafc" stroke="#475569" strokeWidth={2} />
+        <circle cx={320} cy={90} r={18} fill="#f8fafc" stroke="#475569" strokeWidth={2} />
+        <circle cx={320} cy={150} r={18} fill="#f8fafc" stroke="#475569" strokeWidth={2} />
+        <circle cx={320} cy={210} r={18} fill="#f8fafc" stroke="#475569" strokeWidth={2} />
+
+        {/* Node Labels */}
+        <FO x={162} y={42} w={36} h={36}><KT t="A" /></FO>
+        <FO x={162} y={162} w={36} h={36}><KT t="B" /></FO>
+
+        <FO x={302} y={12} w={36} h={36}><KT t="D" /></FO>
+        <FO x={302} y={72} w={36} h={36}><KT t="\overline{D}" /></FO>
+        <FO x={302} y={132} w={36} h={36}><KT t="D" /></FO>
+        <FO x={302} y={192} w={36} h={36}><KT t="\overline{D}" /></FO>
+
+        {/* Branch Probability Labels (Floating Badges over the lines) */}
+        {/* Root -> A */}
+        <FO x={90} y={78} w={40} h={24}>
+          <div style={badgeStyle}><KT t="0{,}6" /></div>
+        </FO>
+        {/* Root -> B */}
+        <FO x={90} y={138} w={40} h={24}>
+          <div style={badgeStyle}><KT t="0{,}4" /></div>
+        </FO>
+
+        {/* A -> D */}
+        <FO x={230} y={33} w={40} h={24}>
+          <div style={badgeStyle}><KT t="0{,}05" /></div>
+        </FO>
+        {/* A -> D̄ */}
+        <FO x={230} y={63} w={40} h={24}>
+          <div style={badgeStyle}><KT t="0{,}95" /></div>
+        </FO>
+
+        {/* B -> D */}
+        <FO x={230} y={153} w={40} h={24}>
+          <div style={badgeStyle}><KT t="0{,}03" /></div>
+        </FO>
+        {/* B -> D̄ */}
+        <FO x={230} y={183} w={40} h={24}>
+          <div style={badgeStyle}><KT t="0{,}97" /></div>
+        </FO>
+      </svg>
+    </div>
+  );
+}

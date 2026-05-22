@@ -3,7 +3,7 @@ import katex from 'katex'
 import 'katex/dist/katex.min.css'
 import './index.css'
 import T from './formulas.json'
-import { ScatterPlot, FunctionCurve, VariationTable } from './charts.jsx'
+import { ScatterPlot, FunctionCurve, VariationTable, ProbabilityTree } from './charts.jsx'
 
 const tex = (s, d = false) => ({ __html: katex.renderToString(s, { throwOnError: false, displayMode: d }) })
 const IM = ({ t }) => <span dangerouslySetInnerHTML={tex(t)} />
@@ -510,130 +510,229 @@ function T1E4() { return (<>
 
 // ── T2-E1 ─────────────────────────────────────────────────────────────────────
 function T2E1() { return (<>
-  <Step index={0} title={<>Déterminant de <IM t="A" /> en fonction de <IM t="\alpha" /></>}>
-    <p>On a <IM t={T.T2E1_matA2} /></p>
-    <BM t={T.T2E1_detA} /><BM t={T.T2E1_detA2} />
-    <RB><IM t="A" /> inversible <IM t="\iff\alpha\neq1" /></RB>
+  <Step index={0} title={<>Arbre pondéré de la situation</>}>
+    <p>Soient les événements :</p>
+    <ul>
+      <li><IM t="A" /> : « la pièce provient de la machine <IM t="A" /> » avec <IM t="p(A) = 0{,}60" /></li>
+      <li><IM t="B" /> : « la pièce provient de la machine <IM t="B" /> » avec <IM t="p(B) = 0{,}40" /></li>
+      <li><IM t="D" /> : « la pièce est défectueuse »</li>
+    </ul>
+    <p>Les probabilités conditionnelles données sont : <BM t={T.T2E1_Cond} /></p>
+    <ProbabilityTree />
+    <RB>L'arbre est complet et pondéré comme ci-dessus. ✓</RB>
   </Step>
-  <Step index={1} title={<>Trouver <IM t="\alpha" /> tel que <IM t="A\times B=2I_3" /></>}>
-    <BM t={T.T2E1_AB2I} />
-    <RB><BM t={T.T2E1_Ainv2} /></RB>
+  <Step index={1} title={<>Probabilité que la pièce soit défectueuse</>}>
+    <p>D'après la formule des probabilités totales :</p>
+    <BM t={T.T2E1_PT} />
+    <BM t={T.T2E1_PT2} />
+    <RB>La probabilité qu'une pièce choisie au hasard soit défectueuse est <IM t="0{,}042" /> (soit <IM t="4{,}2\,\%" />). ✓</RB>
   </Step>
-  <Step index={2} title="Mise en équation du problème du bus">
-    <IB label="Variables"><IM t="x" /> = couples, <IM t="y" /> = femmes seules, <IM t="z" /> = enfants</IB>
-    <BM t={T.T2E1_sys} />
+  <Step index={2} title={<>Probabilité conditionnelle (Formule de Bayes)</>}>
+    <p>Sachant que la pièce prélevée est défectueuse, la probabilité qu'elle provienne de la machine <IM t="A" /> est :</p>
+    <BM t={T.T2E1_Bayes} />
+    <BM t={T.T2E1_Bayes2} />
+    <RB>La probabilité est d'environ <IM t="71{,}4\,\%" /> (exactement <IM t="\frac{5}{7}" />). ✓</RB>
   </Step>
-  <Step index={3} title="Résolution matricielle">
-    <BM t={T.T2E1_Xsol} />
-    <IB label="Détail 1ère ligne"><CR label="x" fkey="T2E1_XR1a" /><CR label="y" fkey="T2E1_XR1b" /><CR label="z" fkey="T2E1_XR1c" /></IB>
-    <RB><BM t={T.T2E1_sol} /></RB>
+  <Step index={3} title={<>Loi binomiale de la variable aléatoire <IM t="X" /></>}>
+    <p>On prélève au hasard 10 pièces de façon indépendante (tirage assimilé à un tirage avec remise). Chaque tirage est une épreuve de Bernoulli de succès <IM t="D" /> de probabilité <IM t="p = 0{,}042" />.</p>
+    <p>La variable aléatoire <IM t="X" /> représentant le nombre de pièces défectueuses suit la loi binomiale :</p>
+    <BM t={T.T2E1_Bin} />
+    <RB>La loi est <IM t="\mathcal{B}(10\,;\; 0{,}042)" />. ✓</RB>
+  </Step>
+  <Step index={4} title={<>Probabilité d'avoir aucune pièce défectueuse</>}>
+    <p>L'événement « n'avoir aucune pièce défectueuse » correspond à <IM t="X = 0" /> :</p>
+    <BM t={T.T2E1_X0} />
+    <RB>La probabilité est d'environ <IM t="0{,}649" /> (soit <IM t="64{,}9\,\%" />). ✓</RB>
+  </Step>
+  <Step index={5} title={<>Espérance mathématique de <IM t="X" /></>}>
+    <p>Par définition de l'espérance d'une loi binomiale :</p>
+    <BM t={T.T2E1_EX} />
+    <RB>En moyenne, on s'attend à trouver <IM t="0{,}42" /> pièce défectueuse sur un échantillon de 10. ✓</RB>
+  </Step>
+  <Step index={6} title={<>Calcul de <IM t="p_n" /> et valeur minimale de <IM t="n" /></>}>
+    <p>Pour un lot de <IM t="n" /> pièces (<IM t="n \ge 2" />), la probabilité d'avoir au moins une pièce défectueuse est :</p>
+    <BM t={T.T2E1_pn} />
+    <p>Nous cherchons le plus petit entier <IM t="n" /> tel que <IM t="p_n \ge 0{,}99" /> :</p>
+    <BM t={T.T2E1_n_ineq} />
+    <p>Puisque <IM t="\ln(0{,}958) < 0" />, le sens de l'inégalité change :</p>
+    <BM t={T.T2E1_n_res} />
+    <RB>La plus petite valeur d'entier cherchée est <IM t="n = 108" />. ✓</RB>
   </Step>
 </>)}
 
 // ── T2-E2 ─────────────────────────────────────────────────────────────────────
-function T2E2() { return (<>
-  <Step index={0} title={<>Calcul de <IM t="U_1, U_2" />, monotonie et convergence</>}>
-    <IB label="Calculs"><BM t="U_1=e^0\cdot1=1" /><BM t="U_2=e^{-1}\cdot1=\tfrac{1}{e}" /></IB>
-    <IB label="Positivité">Si <IM t="U_n>0" />, alors <IM t="U_{n+1}=e^{-n}U_n>0" /> ✓</IB>
-    <IB label="Décroissance"><IM t="e^{-n}\leq1\implies U_{n+1}=e^{-n}U_n\leq U_n" /> ✓</IB>
-    <RB>Suite <strong>minorée</strong> par <IM t="0" /> et <strong>décroissante</strong> ⟹ <strong>convergente</strong> d'après le théorème des suites monotones bornées ✓</RB>
+function T2E2() { 
+  return (<>
+  <Step index={0} title={<>Résolution de l'équation <IM t="(\mathcal{E}_1) : z^2 + (2+i)z + i = 0" /></>}>
+    <p>Calculons le discriminant :</p>
+    <BM t={T.T2E2_delta} />
+    <p>Les deux solutions complexes de <IM t="(\mathcal{E}_1)" /> sont :</p>
+    <BM t={T.T2E2_sols1} />
+    <RB>Les solutions sont <IM t="z_1'" /> et <IM t="z_2'" />. ✓</RB>
   </Step>
-  <Step index={1} title={<>Suite <IM t="V_n=\ln(U_n)" /></>}>
-    <p>Relation de récurrence :</p><BM t={T.T2E2_Vrec} />
-    <IB label="Somme téléscopique"><BM t={T.T2E2_Vn_r} /></IB>
+  <Step index={1} title={<>Résolution de l'équation <IM t="(\mathcal{E}) : z^3 + (1+i)z^2 - 2z - i = 0" /></>}>
+    <div className="section-label">a) Vérification que 1 est solution</div>
+    <BM t={T.T2E2_verif} />
+    <p>Le nombre 1 est bien solution. ✓</p>
+    
+    <div className="section-label">b) Détermination de <IM t="a" /> et <IM t="b" /> par identification</div>
+    <p>En développant le second membre :</p>
+    <BM t={T.T2E2_id} />
+    <p>On identifie avec <IM t="z^3 + (1+i)z^2 - 2z - i" /> :</p>
+    <BM t={T.T2E2_sys} />
+    <p>D'où la factorisation :</p>
+    <BM t={T.T2E2_factor} />
+    
+    <div className="section-label">c) Ensemble des solutions de <IM t="(\mathcal{E})" /></div>
+    <BM t={T.T2E2_sols} />
+    <RB>L'équation <IM t="(\mathcal{E})" /> admet trois solutions : <IM t="1" />, <IM t="z_1'" /> et <IM t="z_2'" />. ✓</RB>
   </Step>
-  <Step index={2} title={<>Formule de <IM t="U_n" /> et limite</>}>
-    <BM t={T.T2E2_Un} />
-    <RB><BM t={T.T2E2_lim} /></RB>
+  <Step index={2} title={<>Forme exponentielle de <IM t="z_A" /> et <IM t="z_B" /> et Cercle unité</>}>
+    <p>Soient <IM t="z_A = \frac{\sqrt{3}}{2} - \frac{1}{2}i" /> et <IM t="z_B = -\frac{\sqrt{3}}{2} - \frac{1}{2}i" /> :</p>
+    <IB label="Calcul de z_A"><BM t={T.T2E2_expA} /></IB>
+    <IB label="Calcul de z_B"><BM t={T.T2E2_expB} /></IB>
+    <BM t={T.T2E2_cer} />
+    <RB>Les points <IM t="A" /> et <IM t="B" /> appartiennent au cercle trigonométrique de centre <IM t="O" /> et de rayon 1. ✓</RB>
+  </Step>
+  <Step index={3} title={<>Nature des quadrilatères <IM t="OEAC" /> et <IM t="OFBC" /></>}>
+    <p>On donne <IM t="z_C = 1" />, <IM t="z_E = z_A - 1" /> et <IM t="z_F = z_B - 1" />.</p>
+    <IB label="Pour OEAC"><BM t={T.T2E2_OEAC} /></IB>
+    <IB label="Pour OFBC"><BM t={T.T2E2_OFBC} /></IB>
+    <p>Puisque les affixes des vecteurs sont égales, <IM t="\vect{OE} = \vect{CA}" /> et <IM t="\vect{OF} = \vect{CB}" />.</p>
+    <RB>Les quadrilatères <IM t="OEAC" /> et <IM t="OFBC" /> sont des parallélogrammes. ✓</RB>
+  </Step>
+  <Step index={4} title={<>Vérification des égalités trigonométriques</>}>
+    <p>Démontrons les identités (avec correction de la coquille de l'énoncé) :</p>
+    <IB label="Première égalité"><BM t={T.T2E2_trig1} /></IB>
+    <IB label="Deuxième égalité"><BM t={T.T2E2_trig2} /></IB>
+    <RB>Les égalités sont vérifiées. ✓</RB>
+  </Step>
+  <Step index={5} title={<>Forme exponentielle des solutions de <IM t="(\mathcal{E}_1)" /></>}>
+    <p>Exprimons les formes exponentielles à partir des égalités précédentes :</p>
+    <IB label="Forme de z_1'"><BM t={T.T2E2_exp1} /></IB>
+    <IB label="Forme de z_2'"><BM t={T.T2E2_exp2} /></IB>
+    <RB>Les formes exponentielles ont des modules strictement positifs. ✓</RB>
   </Step>
 </>)}
 
 // ── T2-E3 ─────────────────────────────────────────────────────────────────────
-const STATS2_PTS = [[1,8.6],[6,9],[11,9.5],[16,9.4],[21,9.5]]
-function T2E3() { return (<>
-  <Step index={0} title="Moyennes et Covariance">
-    <StatTable data={[
-      { label: "Moyenne X", f: "\\overline{X}", r: "11" },
-      { label: "Moyenne Y", f: "\\overline{Y}", r: "9{,}2" },
-      { label: "Écart-type X", f: "\\sigma_X", r: "\\approx 7{,}07" },
-      { label: "Écart-type Y", f: "\\sigma_Y", r: "\\approx 0{,}35" },
-      { label: "Covariance", f: "\\text{Cov}(X,Y)", r: "2{,}3" },
-      { label: "Corrélation r", f: "r = \\frac{\\text{Cov}(X,Y)}{\\sigma_X\\sigma_Y}", r: "\\approx 0{,}92" }
-    ]} />
-    <RB>{T.T2E3_rint}</RB>
+function T2E3() { 
+  return (<>
+  <Step index={0} title={<>Plans parallèles <IM t="P" /> et <IM t="Q" /></>}>
+    <p>Soient les plans <IM t="P : x + y - z - 5 = 0" /> et <IM t="Q : x + y - z + 7 = 0" /> :</p>
+    <BM t={T.T2E3_normal} />
+    <RB>Les deux plans sont strictement parallèles (vecteurs normaux colinéaires et constantes distinctes). ✓</RB>
   </Step>
-  <Step index={1} title="Ajustement Affine (Moindres Carrés)">
-    <div className="section-label">Nuage de points</div>
-    <ScatterPlot
-      points={STATS2_PTS}
-      xLabel="Rang Xi" yLabel="Conso Yi (kg)"
-      xmin={0} xmax={22} ymin={8} ymax={10}
-      xticks={[1,6,11,16,21]}
-      yticks={[8,8.5,9,9.5,10]}
-      lines={[{ a: 0.046, b: 8.694, color: '#e0296e' }]}
-      title="Nuage de points + Droite de régression"
-    />
-    <StatTable data={[
-      { label: "Coefficient a", f: "a = \\frac{\\text{Cov}(X,Y)}{V(X)}", r: "0{,}046" },
-      { label: "Coefficient b", f: "b = \\overline{Y} - a\\overline{X}", r: "8{,}694" }
-    ]} />
-    <RB><BM t={T.T2E3_D} /></RB>
+  <Step index={1} title={<>Justification de la sphère <IM t="S" /></>}>
+    <p>Équation cartésienne : <IM t="x^2 + y^2 + z^2 - 2x - 4y - 2z + 1 = 0" /></p>
+    <BM t={T.T2E3_sph} />
+    <RB>Il s'agit de la sphère de centre <IM t="I(1, 2, 1)" /> et de rayon <IM t="R = \sqrt{5}" />. ✓</RB>
   </Step>
-  <Step index={2} title="Estimations et Calcul de prix">
-    <IB label="Estimation 2024 (rang 30)"><BM t={T.T2E3_est2024} /></IB>
-    <IB label="Total conso 2024 (+20%)"><BM t={T.T2E3_tot2024} /></IB>
-    <IB label="Conso autres viandes"><BM t={T.T2E3_autres} /></IB>
-    <div className="section-label">Calcul du prix du mouton</div>
-    <IB label="Équation de dépense"><BM t={T.T2E3_prix} /></IB>
-    <RB><BM t={T.T2E3_pm} /></RB>
+  <Step index={2} title={<>Intersection <IM t="P \cap S" /> (Cercle)</>}>
+    <p>Calculons la distance de <IM t="I" /> au plan <IM t="P" /> :</p>
+    <BM t={T.T2E3_dIP} />
+    <p>Puisque <IM t="d(I,P) < R" />, l'intersection est un cercle <IM t="\mathscr{C}" />.</p>
+    <IB label="Centre J du cercle"><BM t={T.T2E3_proj} /> ⟹ J(2, 3, 0)</IB>
+    <IB label="Rayon r du cercle"><BM t={T.T2E3_rayon} /></IB>
+    <RB>L'intersection <IM t="P \cap S" /> est le cercle <IM t="\mathscr{C}" /> de centre <IM t="J(2,3,0)" /> et de rayon <IM t="r = \sqrt{2}" />. ✓</RB>
+  </Step>
+  <Step index={3} title={<>Intersection <IM t="Q \cap S" /> (Vide)</>}>
+    <p>Calculons la distance de <IM t="I" /> au plan <IM t="Q" /> :</p>
+    <BM t={T.T2E3_dIQ} />
+    <RB>Puisque <IM t="d(I,Q) = 3\sqrt{3} > \sqrt{5}" />, le plan <IM t="Q" /> ne coupe pas la sphère. L'intersection est vide : <IM t="Q \cap S = \emptyset" />. ✓</RB>
+  </Step>
+  <Step index={4} title={<>Produit vectoriel <IM t="\vect{AB} \wedge \vect{AC}" /> et produit scalaire</>}>
+    <p>Soient <IM t="A(0,0,1)" />, <IM t="B(0,1,2)" /> et <IM t="C(2,2,5)" /> :</p>
+    <IB label="Produit vectoriel"><BM t={T.T2E3_prod_vec} /></IB>
+    <IB label="Produit scalaire avec AM"><BM t={T.T2E3_prod_scal} /></IB>
+    <RB>Le produit scalaire est égal à <IM t="2(x + y - z + 1)" />. ✓</RB>
+  </Step>
+  <Step index={5} title={<>Volume et ensemble de points <IM t="M" /></>}>
+    <p>Le volume du tétraèdre <IM t="ABCM" /> est :</p>
+    <BM t={T.T2E3_vol} />
+    <p>On cherche <IM t="M \in S" /> tel que <IM t="V = 2" /> :</p>
+    <BM t={T.T2E3_vol_res} />
+    <p>L'ensemble cherché est donc <IM t="S \cap (P \cup Q) = (S \cap P) \cup (S \cap Q)" />.</p>
+    <RB>Puisque <IM t="Q \cap S = \emptyset" />, l'ensemble des points est exactement le cercle <IM t="\mathscr{C}" />. ✓</RB>
   </Step>
 </>)}
 
 // ── T2-E4 ─────────────────────────────────────────────────────────────────────
 function T2E4() { 
-  const f24 = x => Math.exp(x) - Math.exp(-x) + x
-  const d24 = x => x
+  const f24 = x => Math.log(1 + Math.exp(x)) - Math.exp(x)/(1 + Math.exp(x))
+  const d24 = x => x - 1
+  const bisector = x => x
+  const tangent = x => 0.25 * x + Math.log(2) - 0.5
   return (<>
-  <Step index={0} title="Parité et Limites">
-    <IB label="Parité"><BM t={T.T2E4_imp} /></IB>
-    <IB label="Limite en +∞"><BM t={T.T2E4_lim} /></IB>
-    <IB label="Direction asymptotique"><BM t={T.T2E4_limx} /></IB>
-    <RB>{T.T2E4_int}</RB>
+  <Step index={0} title={<>Limite en <IM t="-\infty" /> et Asymptote horizontale</>}>
+    <p>Étudions la limite en <IM t="-\infty" /> de <IM t="f(x) = \ln(1+e^x) - \frac{e^x}{1+e^x}" /> :</p>
+    <BM t={T.T2E4_limM} />
+    <RB>La droite d'équation <IM t="y = 0" /> (l'axe des abscisses) est une asymptote horizontale en <IM t="-\infty" />. ✓</RB>
   </Step>
-  <Step index={1} title="Dérivée et Variations">
-    <IB label="Dérivée"><BM t={T.T2E4_fp} /></IB>
-    <div className="section-label">Tableau de variation</div>
+  <Step index={1} title={<>Expression alternative et Limite en <IM t="+\infty" /></>}>
+    <div className="section-label">a) Démontrer l'identité algébrique</div>
+    <BM t={T.T2E4_f_alt} />
+    <div className="section-label">b) Limite en <IM t="+\infty" /></div>
+    <BM t={T.T2E4_limP} />
+    <RB>La limite en <IM t="+\infty" /> est <IM t="+\infty" />. ✓</RB>
+  </Step>
+  <Step index={2} title={<>Asymptote oblique <IM t="(\Delta)" /> et Position relative</>}>
+    <div className="section-label">c) Asymptote oblique en <IM t="+\infty" /></div>
+    <BM t={T.T2E4_asymp} />
+    <p>La droite <IM t="(\Delta) : y = x - 1" /> est asymptote oblique au voisinage de <IM t="+\infty" />. ✓</p>
+    <div className="section-label">d) Position relative de la courbe <IM t="(\mathcal{C})" /> et <IM t="(\Delta)" /></div>
+    <BM t={T.T2E4_pos} />
+    <RB>La courbe <IM t="(\mathcal{C})" /> est strictly au-dessus de l'asymptote <IM t="(\Delta)" /> sur <IM t="\mathbb{R}" />. ✓</RB>
+  </Step>
+  <Step index={3} title={<>Dérivée et Tableau de Variations</>}>
+    <p>La dérivée de la fonction <IM t="f" /> est :</p>
+    <BM t={T.T2E4_fp} />
+    <p>Puisque <IM t="f'(x) > 0" /> pour tout réel <IM t="x" />, la fonction <IM t="f" /> est strictement croissante.</p>
     <VariationTable
       xVals={[{ tex: '-\\infty' }, { tex: '+\\infty' }]}
       signs={['+']}
       arrows={['up']}
-      fVals={[{ tex: '-\\infty', pos: 'bot' }, { tex: '+\\infty', pos: 'top' }]}
+      fVals={[{ tex: '0', pos: 'bot' }, { tex: '+\\infty', pos: 'top' }]}
     />
+    <RB>La fonction est strictement croissante sur <IM t="\mathbb{R}" />. ✓</RB>
   </Step>
-  <Step index={2} title="Inflexion et Tangente">
-    <IB label="Dérivée seconde"><BM t={T.T2E4_fpp} /></IB>
-    <IB label="Point d'inflexion"><BM t={T.T2E4_inf} /></IB>
-    <RB><BM t={T.T2E4_T} /></RB>
+  <Step index={4} title={<>Équation de la tangente <IM t="(T)" /> en 0</>}>
+    <p>La tangente à <IM t="(\mathcal{C})" /> au point d'abscisse 0 est :</p>
+    <BM t={T.T2E4_tang} />
+    <RB>L'équation de la tangente <IM t="(T)" /> est <IM t="y = \frac{1}{4}x + \ln 2 - \frac{1}{2}" />. ✓</RB>
   </Step>
-  <Step index={3} title="Courbes et Position Relative">
-    <div className="section-label">Tracé de (C) et Δ</div>
+  <Step index={5} title={<>Étude de <IM t="g(x) = f(x) - x" /> et unique point fixe <IM t="\alpha" /></>}>
+    <div className="section-label">a) Dérivée de g et g(ln 2)</div>
+    <BM t={T.T2E4_g} />
+    <BM t={T.T2E4_g_val} />
+    <div className="section-label">b) Théorème des valeurs intermédiaires</div>
+    <BM t={T.T2E4_alpha} />
+    <RB>Il existe un unique point fixe <IM t="\alpha \in [0, \ln 2]" /> tel que <IM t="f(\alpha) = \alpha" /> (avec <IM t="\alpha \approx 0{,}193" />). ✓</RB>
+  </Step>
+  <Step index={6} title={<>Étude de la suite récurrente <IM t="(u_n)" /></>}>
+    <p>Soit la suite définie par :</p>
+    <BM t={T.T2E4_suite_rec} />
+    <IB label="a) Encadrement par récurrence"><BM t={T.T2E4_suite_enc} /></IB>
+    <IB label="b) Monotonie par récurrence"><BM t={T.T2E4_suite_crois} /></IB>
+    <IB label="c) Convergence et limite"><BM t={T.T2E4_suite_lim} /></IB>
+    <RB>La suite <IM t="(u_n)" /> est strictement croissante, majorée, et sa limite est l'unique point fixe <IM t="\alpha" />. ✓</RB>
+  </Step>
+  <Step index={7} title={<>Représentation Graphique de <IM t="f(x)" />, <IM t="(\Delta)" />, <IM t="y=x" /> et <IM t="(T)" /></>}>
     <FunctionCurve
       fn={f24}
-      xmin={-2} xmax={2} ymin={-4} ymax={4}
-      xticks={[-2,-1,0,1,2]} yticks={[-4,-2,0,2,4]}
-      title="(C): f(x) et Δ: y = x (en pointillé)"
+      xmin={-4} xmax={4} ymin={-2} ymax={4}
+      xticks={[-4, -2, 0, 2, 4]}
+      yticks={[-2, 0, 2, 4]}
+      title={<>Courbe de f(x) = ln(1+e^x) - e^x/(1+e^x)</>}
+      animated={true}
       extra={[
-        { type:'fn', fn: d24, color:'#e0296e', dash: true },
-        { type:'fn', fn: x => 3*x, color:'#16803c', dash: true } // Tangente
+        { type: 'fn', fn: d24, color: '#e0296e', dash: true }, // Asymptote
+        { type: 'fn', fn: bisector, color: '#64748b', dash: true }, // y = x
+        { type: 'fn', fn: tangent, color: '#eab308' }, // Tangente
+        { type: 'point', x: 0.193, y: 0.193, color: '#dc2626' } // Point fixe alpha
       ]}
     />
-    <IB label="Position (f(x) - x)"><BM t={T.T2E4_pos} /></IB>
-    <RB><BM t={T.T2E4_pos2} /> ⟹ (C) est au-dessus de Δ sur ]0;+∞[ et en-dessous sur ]-∞;0[</RB>
-  </Step>
-  <Step index={4} title="Calcul d'Aire">
-    <IB label="Calcul de I"><BM t={T.T2E4_I} /><BM t={T.T2E4_I2} /></IB>
-    <IB label="Aire totale S"><BM t={T.T2E4_S} /></IB>
-    <RB><BM t={T.T2E4_S2} /></RB>
+    <RB>La courbe représentative de la fonction s'approche de <IM t="y=0" /> en <IM t="-\infty" /> et de <IM t="y=x-1" /> en <IM t="+\infty" />. Le point fixe <IM t="\alpha" /> est à l'intersection avec la droite <IM t="y=x" />. ✓</RB>
   </Step>
 </>)}
 
@@ -1929,10 +2028,10 @@ const DB = {
   'T1-E2': { title:'Géométrie dans l\'Espace', badge:'Sujet 1 · Ex.2', C:<T1E2/> },
   'T1-E3': { title:'Suites Numériques', badge:'Sujet 1 · Ex.3', C:<T1E3/> },
   'T1-E4': { title:'Analyse', badge:'Sujet 1 · Ex.4', C:<T1E4/> },
-  'T2-E1': { title:'Matrices et Applications', badge:'Sujet 2 · Ex.1 · Algèbre',       C:<T2E1/> },
-  'T2-E2': { title:'Suites Numériques',        badge:'Sujet 2 · Ex.2 · Analyse',       C:<T2E2/> },
-  'T2-E3': { title:'Statistiques',             badge:'Sujet 2 · Ex.3 · Stats',         C:<T2E3/> },
-  'T2-E4': { title:'Étude de Fonction — Exp',  badge:'Sujet 2 · Ex.4 · Analyse',       C:<T2E4/> },
+  'T2-E1': { title:'Probabilités',             badge:'Sujet 2 · Ex.1 · Probabilités',   C:<T2E1/> },
+  'T2-E2': { title:'Nombres Complexes',        badge:'Sujet 2 · Ex.2 · Complexes',      C:<T2E2/> },
+  'T2-E3': { title:'Géométrie dans l\'Espace', badge:'Sujet 2 · Ex.3 · Géométrie',      C:<T2E3/> },
+  'T2-E4': { title:'Analyse : Suite et Problème', badge:'Sujet 2 · Ex.4 · Analyse',       C:<T2E4/> },
   'T3-E1': { title:'Matrices et Suites',       badge:'Sujet 3 · Ex.1 · Algèbre',       C:<T3E1/> },
   'T3-E2': { title:'Théorie des Graphes',      badge:'Sujet 3 · Ex.2 · Graphes',       C:<T3E2/> },
   'T3-E3': { title:'Probabilités',             badge:'Sujet 3 · Ex.3 · Proba',         C:<T3E3/> },
